@@ -1178,7 +1178,7 @@ class PlayState extends MusicBeatState
 	
 	function startCharacterPos(char:Character, ?gfCheck:Bool = false)
 	{
-		if (gfCheck && char.curCharacter.sWith('gf'))
+		if (gfCheck && char.curCharacter.startsWith('gf'))
 		{ // IF DAD IS GIRLFRIEND, HE GOES TO HER POSITION
 			char.setPosition(GF_X, GF_Y);
 			char.scrollFactor.set(0.95, 0.95);
