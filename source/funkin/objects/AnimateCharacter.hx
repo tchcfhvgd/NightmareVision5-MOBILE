@@ -1,3 +1,4 @@
+#if desktop
 package funkin.objects;
 
 import openfl.errors.Error;
@@ -38,3 +39,4 @@ interface Icharacter
 	public function loadJson():Void;
 	public function addOffset():Void;
 }
+#end
