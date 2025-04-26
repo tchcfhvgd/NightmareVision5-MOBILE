@@ -28,6 +28,8 @@ class Init extends FlxState
 		FlxG.sound.volumeUpKeys = volumeUpKeys;
 		FlxG.keys.preventDefaultKeys = [TAB];
 
+		mobile.MobileData.init();
+
 		FlxG.mouse.visible = false;
 
 		funkin.backend.PlayerSettings.init();
