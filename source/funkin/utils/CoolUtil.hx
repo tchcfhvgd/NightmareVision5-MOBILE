@@ -128,6 +128,15 @@ class CoolUtil
 		#end
 	}
 
+	public static function showPopUp(message:String, title:String):Void
+	{
+		//#if android
+		//android.Tools.showAlertDialog(title, message, {name: "OK", func: null}, null);
+		//#else
+		FlxG.stage.window.alert(message, title);
+		//#end
+	}
+
 	inline public static function openFolder(folder:String, absolute:Bool = false)
 	{
 		#if sys
