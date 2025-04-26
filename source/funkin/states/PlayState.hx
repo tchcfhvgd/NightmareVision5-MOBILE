@@ -1188,7 +1188,7 @@ class PlayState extends MusicBeatState
 		char.y += char.positionArray[1];
 	}
 	
-	public function Video(name:String):Void
+	public function startVideo(name:String):Void
 	{
 	#if VIDEOS_ALLOWED
 	var foundFile:Bool = false;
@@ -1238,7 +1238,7 @@ class PlayState extends MusicBeatState
 		startAndEnd();
 	}
 	
-	function AndEnd()
+	function startAndEnd()
 	{
 		if (endingSong)
 		{
@@ -1282,7 +1282,7 @@ class PlayState extends MusicBeatState
 					startCountdown();
 				}
 			}
-			psychDialogue.nextDialogueThing = NextDialogue;
+			psychDialogue.nextDialogueThing = startNextDialogue;
 			psychDialogue.skipDialogueThing = skipDialogue;
 			psychDialogue.cameras = [camHUD];
 			add(psychDialogue);
