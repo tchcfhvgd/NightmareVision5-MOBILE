@@ -61,7 +61,7 @@ jobs:
           haxelib install hscript
           haxelib install hscript-iris
           haxelib install flixel-tools
-          haxelib git flxanimate https://github.com/FunkinCrew/flxanimate
+          haxelib install flxanimate 4.0.0
           haxelib git linc_luajit https://github.com/MobilePorting/linc_luajit
           haxelib list
       
