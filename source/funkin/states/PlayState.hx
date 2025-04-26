@@ -3922,6 +3922,7 @@ class PlayState extends MusicBeatState
 			
 			callOnScripts('onKeyPress', [buttonCode]);
 	}
+}
 
 	private function onButtonRelease(button:TouchButton):Void
 	{
