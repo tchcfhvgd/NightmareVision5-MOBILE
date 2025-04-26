@@ -72,6 +72,8 @@ class MainMenuState extends MusicBeatState
 			if (i is FlxSprite) cast(i, FlxSprite).antialiasing = ClientPrefs.globalAntialiasing;
 
         super.create();
+
+		addTouchPad("UP_DOWN", "A_B");
 	}
 
 	override function update(elapsed:Float)
