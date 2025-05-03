@@ -54,9 +54,9 @@ jobs:
           haxelib git hxcpp https://github.com/MobilePorting/hxcpp
           haxelib git lime https://github.com/MobilePorting/lime
           haxelib install openfl 9.3.3
-          haxelib git flixel https://github.com/MobilePorting/flixel 5.8.0
-          haxelib install flixel-ui 2.6.1
-          haxelib install flixel-addons 3.2.3
+          haxelib install flixel 6.0.0
+          haxelib install flixel-ui
+          haxelib install flixel-addons
           haxelib install hxvlc 2.1.2
           haxelib install hscript
           haxelib install hscript-iris
