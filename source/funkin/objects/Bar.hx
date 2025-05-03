@@ -9,6 +9,7 @@ class Bar extends FlxSpriteGroup
 	public var leftBar:FlxSprite;
 	public var rightBar:FlxSprite;
 	public var bg:FlxSprite;
+	public var bgOffset(default, set):FlxPoint = new FlxPoint(0, 0);
 	public var valueFunction:Void->Float = null;
 	public var percent(default, set):Float = 0;
 	public var bounds:FlxBounds<Float> = new FlxBounds(0.0, 0.0);
@@ -20,6 +21,12 @@ class Bar extends FlxSpriteGroup
 	public var barHeight(default, set):Int = 1;
 	public var barOffset:FlxPoint = new FlxPoint(3, 3);
 
+	private function set_bgOffset(value:FlxPoint)
+	{
+		bgOffset = value;
+		bg.setPosition(bg.x + bgOffset.x, bg.y + bgOffset.y);
+		return value;
+	}
 
 	public function new(x:Float, y:Float, image:String = 'healthBar', valueFunction:Void->Float = null, boundX:Float = 0, boundY:Float = 1)
 	{
@@ -30,10 +37,10 @@ class Bar extends FlxSpriteGroup
 
 		bg = new FlxSprite().loadGraphic(Paths.image(image));
 		bg.antialiasing = ClientPrefs.globalAntialiasing;
-		bg.setPosition(bg.x, bg.y);
+		bg.setPosition(bg.x + bgOffset.x, bg.y + bgOffset.y);
 
-		barWidth = Std.int(bg.width - 6);
-		barHeight = Std.int(bg.height - 6);
+		barWidth = Std.int(bg.width);
+		barHeight = Std.int(bg.height);
 
 		leftBar = new FlxSprite().makeGraphic(Std.int(bg.width), Std.int(bg.height), FlxColor.WHITE);
 		// leftBar.color = FlxColor.WHITE;
@@ -85,8 +92,8 @@ class Bar extends FlxSpriteGroup
 	{
 		if (leftBar == null || rightBar == null) return;
 
-		leftBar.setPosition(bg.x, bg.y);
-		rightBar.setPosition(bg.x,bg.y);
+		leftBar.setPosition(bg.x - bgOffset.x, bg.y - bgOffset.y);
+		rightBar.setPosition(bg.x - bgOffset.x, bg.y - bgOffset.y);
 
 		var leftSize:Float = 0;
 		if (leftToRight) leftSize = FlxMath.lerp(0, barWidth, percent / 100);

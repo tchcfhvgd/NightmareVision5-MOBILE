@@ -81,6 +81,11 @@ class OptionsState extends MusicBeatState
 		#if desktop
 		DiscordClient.changePresence("Options Menu", null);
 		#end
+		
+		setUpScript('OptionsState');
+		setOnScript('this', this);
+		
+		if(isHardcodedState()){
 
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		bg.color = 0xFFea71fd;
@@ -108,10 +113,14 @@ class OptionsState extends MusicBeatState
 
 		changeSelection();
 		ClientPrefs.saveSettings();
+		
+		}
 
 		super.create();
 
 		addTouchPad("UP_DOWN", "A_B_C");
+		
+		callOnScript('onCreatePost', []);
 	}
 
 	override function closeSubState()
@@ -121,12 +130,15 @@ class OptionsState extends MusicBeatState
 		removeTouchPad();
 		addTouchPad("UP_DOWN", "A_B_C");
 		ClientPrefs.saveSettings();
+		
+		callOnScript('onCloseSubState', []);
 	}
 
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
 
+		if(isHardcodedState()){
 		if (controls.UI_UP_P)
 		{
 			changeSelection(-1);
@@ -156,6 +168,7 @@ class OptionsState extends MusicBeatState
 		if (touchPad != null && touchPad.buttonC.justPressed) {
 			touchPad.active = touchPad.visible = persistentUpdate = false;
 			openSubState(new mobile.MobileControlSelectSubState());
+		}
 		}
 	}
 

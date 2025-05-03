@@ -71,6 +71,7 @@ class FunkinScript
 			set('weekRaw', PlayState.storyWeek);
 			set('seenCutscene', PlayState.seenCutscene);
 			set('week', WeekData.weeksList[PlayState.storyWeek]);
+			set('mustHitSection', PlayState.SONG.notes[0]?.mustHitSection ?? false);
 			set('difficultyName', DifficultyUtil.difficulties[PlayState.storyDifficulty]);
 			set('songLength', flixel.FlxG.sound.music.length);
 			set('healthGainMult', PlayState.instance.healthGain);

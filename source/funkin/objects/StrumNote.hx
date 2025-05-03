@@ -102,21 +102,14 @@ class StrumNote extends FlxSprite
 		var lastAnim:String = null;
 		if (animation.curAnim != null) lastAnim = animation.curAnim.name;
 		var br:String = texture;
-		if (PlayState.isPixelStage)
+		if (handler.data.isPixel)
 		{
 			if ((ClientPrefs.noteSkin == 'Quants' || ClientPrefs.noteSkin == "QuantStep"))
-			{
-				if (Assets.exists(Paths.getPath("images/pixelUI/QUANT" + texture + ".png", IMAGE))
-					|| FileSystem.exists(Paths.modsImages("pixelUI/QUANT" + texture)))
-				{
-					if (handler.data.hasQuants) br = "QUANT" + texture;
-					isQuant = true;
-				}
-			}
-			loadGraphic(Paths.image('pixelUI/' + br));
-			width = width / 4;
-			height = height / 5;
-			loadGraphic(Paths.image('pixelUI/' + br), true, Math.floor(width), Math.floor(height));
+				isQuant = handler.data.isQuants;
+			loadGraphic(Paths.image(br));
+			width = width / handler.data.pixelSize[0];
+			height = height / handler.data.pixelSize[1];
+			loadGraphic(Paths.image(br), true, Math.floor(width), Math.floor(height));
 
 			antialiasing = false;
 			setGraphicSize(Std.int(width * PlayState.daPixelZoom));
@@ -125,15 +118,7 @@ class StrumNote extends FlxSprite
 		else
 		{
 			if ((ClientPrefs.noteSkin == 'Quants' || ClientPrefs.noteSkin == "QuantStep"))
-			{
-				if (Assets.exists(Paths.getPath("images/QUANT" + texture + ".png", IMAGE))
-					|| FileSystem.exists(Paths.modsImages("QUANT" + texture)))
-				{
-					if (handler.data.hasQuants) br = "QUANT" + texture;
-					isQuant = true;
-					trace(br);
-				}
-			}
+				isQuant = handler.data.isQuants;
 			frames = Paths.getSparrowAtlas(br);
 
 			antialiasing = ClientPrefs.globalAntialiasing;
@@ -143,6 +128,10 @@ class StrumNote extends FlxSprite
 		}
 		defScale.copyFrom(scale);
 		updateHitbox();
+
+		antialiasing = handler.data.antialiasing;
+		if(handler.data.antialiasing)
+			antialiasing = ClientPrefs.globalAntialiasing;
 
 		if (lastAnim != null)
 		{
@@ -201,7 +190,7 @@ class StrumNote extends FlxSprite
 		super.set_alpha(targetAlpha * alphaMult);
 		if (animation.curAnim != null)
 		{ // my bad i was upset
-			if (animation.curAnim.name == 'confirm' && !PlayState.isPixelStage) centerOrigin();
+			if (animation.curAnim.name == 'confirm' && !handler.data.isPixel) centerOrigin();
 		}
 
 		super.update(elapsed);
@@ -239,7 +228,7 @@ class StrumNote extends FlxSprite
 				colorSwap.brightness = note.colorSwap.brightness;
 			}
 
-			if (animation.curAnim.name == 'confirm' && !PlayState.isPixelStage)
+			if (animation.curAnim.name == 'confirm' && !handler.data.isPixel)
 			{
 				centerOrigin();
 			}

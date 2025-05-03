@@ -77,6 +77,9 @@ class ControlsSubState extends MusicBeatSubstate
 	{
 		super();
 
+		setUpScript('ControlsSubState');
+		setOnScript('this', this);
+		
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		bg.color = 0xFFea71fd;
 		bg.screenCenter();
@@ -124,6 +127,10 @@ class ControlsSubState extends MusicBeatSubstate
 		changeSelection();
 
 		addTouchPad("LEFT_FULL", "A_B");
+		
+		setOnScript('bg', bg);
+		setOnScript('grpOptions', grpOptions);
+		callOnScript('onCreatePost', []);
 	}
 
 	var leaving:Bool = false;

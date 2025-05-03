@@ -1,199 +1,170 @@
 package funkin.objects.video;
 
-import openfl.Assets;
-import haxe.io.Bytes;
+import hxvlc.util.Location;
+
+import flixel.util.FlxSignal;
+
 import hxvlc.flixel.FlxVideoSprite;
 
-class FunkinVideoSprite extends FlxVideoSprite
-{
-	static var _init:Bool = false;
+// a little funky but thats what happens when u gotta do weird workarounds
+// probably will do more iwth this later
 
-	public static function init()
-	{
-		if (_init) return;
-		_init = true;
-		trace('handle init? ' + hxvlc.util.Handle.init());
+//by data 5 for 17buckys 
+//still a wip version of it tho but its better than the other ones so
+
+/**
+ * Handles video playback as a `FlxSprite`. Has additional features for ease
+ * 
+ * If used in `PlayState`, will autopause when the game is paused too
+ * 
+ * General Usage:
+ * ```haxe
+ * 	var video = new FunkinVideoSprite(x,y).preload(videoPath, [FunkinVideoSprite.MUTED])
+ * 	add(video);
+ * 	video.onReady.addOnce(()->{
+ * 		video.setGraphicSize(0,FlxG.height);
+ * 		video.updateHitbox();
+ * 		video.screenCenter(FlxAxes.X);
+ * 
+ * 	});
+ *	video.playVideo();
+
+ * ```
+ */
+class FunkinVideoSprite extends FlxVideoSprite {
+	public static function init() {
+		hxvlc.util.Handle.init(['--no-lua']);
 	}
-
-	public static final looping:String = ':input-repeat=65535';
-	public static final muted:String = ':no-audio';
-
-	public function new(x:Float = 0, y:Float = 0, destroyOnUse:Bool = true, dontAdd:Bool = false)
-	{
+	
+	public static var _videos:Array<FunkinVideoSprite> = [];
+	
+	/**
+	 * Loading option that makes the video loop
+	 */
+	public static final LOOPING:String = ':input-repeat=65535';
+	
+	/**
+	 * Loading option that mutes the video.
+	 * 
+	 * Use if video audio is not required.
+	 */
+	public static final MUTED:String = ':no-audio';
+	
+	/**
+	 * Dispatched when the video ends.
+	 * 
+	 * wrapper for `bitmap.onEndReached`
+	 */
+	public final onFinish:FlxSignal = new FlxSignal();
+	
+	/**
+	 * Dispatched when the videos internal bitmap is ready.
+	 * 
+	 * 
+	 * wrapper for `bitmap.onFormatSetup`
+	 */
+	public final onReady:FlxSignal = new FlxSignal();
+	
+	/**
+	 * Dispatched when the video starts.
+	 * 
+	 * wrapper for `bitmap.onOpening`
+	 */
+	public final onStart:FlxSignal = new FlxSignal();
+	
+	private var wasPlaying:Bool = false;
+	
+	/**
+	 * @param destroyOnFinish if true, will destroy itself on finish.
+	 */
+	public function new(x:Float = 0, y:Float = 0, destroyOnFinish:Bool = true):Void {
 		super(x, y);
-
-		if (destroyOnUse) bitmap.onEndReached.add(() -> {
-			this.destroy();
-		}, true);
-
-		if (!dontAdd) tryAddingToPlayState();
-	}
-
-	function tryAddingToPlayState()
-	{
-		if (Std.isOfType(FlxG.state, PlayState) && PlayState.instance != null)
-		{
-			var cur:PlayState = cast FlxG.state;
-
-			cur.onPauseSignal.add(this.pause);
-			cur.onResumeSignal.add(this.resume);
+		
+		if (bitmap != null) {
+			bitmap.onFormatSetup.add(onReady.dispatch, false);
+			bitmap.onEndReached.add(onFinish.dispatch, false);
+			
+			bitmap.onOpening.add(() -> {
+				if (!_preloaded)
+					onStart.dispatch(); // being real another option that is less hacky is all together ignore onStart and just do ur stuff when u call play
+			}, false);
+			
+			if (destroyOnFinish)
+				bitmap.onEndReached.add(this.destroy, true, -9999);
 		}
+		_videos.push(this);
 	}
-
-	// this was gonna be more elaborate but i decided not to
-	function decipherLocation(local:Location)
-	{
-		if (local != null && !(local is Int) && !(local is Bytes) && (local is String))
-		{
-			var local:String = cast(local, String);
-
-			var modPath:String = Paths.modFolders('videos/$local');
-			var assetPath:String = 'assets/videos/$local';
-
-			// found bytes. return em
-			if (Assets.exists(modPath, BINARY)) return cast Assets.getBytes(modPath);
-			else if (Assets.exists(assetPath, BINARY)) return cast Assets.getBytes(assetPath);
-
-			if (FileSystem.exists(modPath)) return cast modPath;
-			else if (FileSystem.exists(assetPath)) return cast assetPath;
-		}
-
-		return local;
-	}
-
-	override function load(location:Location, ?options:Array<String>):Bool
-	{
-		if (bitmap == null) return false;
-
-		if (autoPause)
-		{
-			if (!FlxG.signals.focusGained.has(bitmap.resume)) FlxG.signals.focusGained.add(bitmap.resume);
-			if (!FlxG.signals.focusLost.has(bitmap.pause)) FlxG.signals.focusLost.add(bitmap.pause);
-		}
-
-		final realLocal = decipherLocation(location);
-
-		if (realLocal != null && !(realLocal is Int) && !(realLocal is Bytes) && (realLocal is String))
-		{
-			final realLocal:String = cast(realLocal, String);
-
-			if (!realLocal.contains('://'))
-			{
-				final absolutePath:String = FileSystem.absolutePath(realLocal);
-
-				if (FileSystem.exists(absolutePath)) return bitmap.load(absolutePath, options);
-				else
-				{
-					FlxG.log.warn('Unable to find the video file at location "$absolutePath".');
-
-					return false;
+	
+	public function preload(path:Location, ?options:Array<String>):FunkinVideoSprite {
+		// if u didnt use path try to find the path and the extension
+		if (path is String) {
+			var stringPath:String = cast path;
+			if (!stringPath.endsWith('.mp4') && !stringPath.endsWith('.mov')) {
+				var found = false;
+				for (ext in ['mp4', 'mov']) {
+					
+					final fullPath = 'assets/videos/$stringPath.$ext'; 
+					if (FileSystem.exists(fullPath)) {
+						stringPath = fullPath;
+						found = true;
+						break;
+					}
 				}
+				if (found)
+					path = stringPath;
 			}
 		}
-
-		return bitmap.load(realLocal, options);
-	}
-
-	override function pause()
-	{
-		super.pause();
-
-		if (autoPause)
-		{
-			if (FlxG.signals.focusGained.has(bitmap.resume)) FlxG.signals.focusGained.remove(bitmap.resume);
-			if (FlxG.signals.focusLost.has(bitmap.pause)) FlxG.signals.focusLost.remove(bitmap.pause);
+		
+		// essentially this is a workaround for hxvlc's inconsistent video playback
+		// sometimes its delayed and sometimes loading,playing,stopping to try to preload causes openfl texture corruption garbage
+		if (load(path, options)) {
+			_preloaded = true; // im going to play a risk and assume the video does infact play
+			
+			if (play()) {
+				pause();
+				visible = false;
+				if (bitmap != null)
+					bitmap.time = 0;
+			}
 		}
+		
+		return this;
 	}
-
-	override function resume()
-	{
-		super.resume();
-		if (autoPause)
-		{
-			if (!FlxG.signals.focusGained.has(bitmap.resume)) FlxG.signals.focusGained.add(bitmap.resume);
-			if (!FlxG.signals.focusLost.has(bitmap.pause)) FlxG.signals.focusLost.add(bitmap.pause);
+	
+	/**
+	 * Use over `play()`.
+	 */
+	public function playVideo():Void {
+		FlxTimer.wait(0, _preloaded ? _preloadPlay : play);
+	}
+	
+	private var _preloaded:Bool = false;
+	
+	function _preloadPlay():Void {
+		visible = true;
+		resume();
+		_preloaded = false;
+		onStart.dispatch();
+	}
+	
+	override function destroy():Void {
+		if (bitmap != null) {
+			bitmap.onEndReached.removeAll();
+			bitmap.onFormatSetup.removeAll();
+			bitmap.onPlaying.removeAll();
 		}
-	}
-
-	public function onEnd(func:Void->Void,once:Bool = false)
-	{
-		bitmap.onEndReached.add(func, once);
-	}
-
-	public function onStart(func:Void->Void,once:Bool = false)
-	{
-		bitmap.onOpening.add(func, once);
-	}
-
-	public function onFormat(func:Void->Void,once:Bool = false)
-	{
-		bitmap.onFormatSetup.add(func, once);
-	}
-
-	public function addCallback(vidCallBack:VidCallbacks, func:Void->Void, once:Bool = false)
-	{
-		switch (vidCallBack)
-		{
-			case ONEND:
-				if (func != null) bitmap.onEndReached.add(func, once);
-			case ONSTART:
-				if (func != null) bitmap.onOpening.add(func, once);
-			case ONFORMAT:
-				if (func != null) bitmap.onFormatSetup.add(func, once);
-		}
-	}
-
-	public static function quickGen(data:VideoData)
-	{
-		var video = new FunkinVideoSprite();
-		final isMute = data.muted ? muted : '';
-		final loops = data.loops ? looping : '';
-		video.load(data.file, [isMute, loops]);
-		return video;
-	}
-
-	public static function cacheVid(path:String)
-	{
-		var video = new FunkinVideoSprite(0, 0, false, true);
-		video.load(path, [muted]);
-		video.addCallback(ONFORMAT, () -> {
-			video.destroy();
-		});
-		video.play();
-	}
-
-	override function destroy()
-	{
-		if (Std.isOfType(FlxG.state, PlayState) && PlayState.instance != null)
-		{
-			var cur:PlayState = cast FlxG.state;
-			if (cur.onPauseSignal.has(this.pause)) cur.onPauseSignal.remove(this.pause);
-			if (cur.onResumeSignal.has(this.resume)) cur.onResumeSignal.remove(this.resume);
-		}
-		if (bitmap != null)
-		{
-			bitmap.stop();
-
-			if (FlxG.signals.focusGained.has(bitmap.resume)) FlxG.signals.focusGained.remove(bitmap.resume);
-			if (FlxG.signals.focusLost.has(bitmap.pause)) FlxG.signals.focusLost.remove(bitmap.pause);
-		}
-
+		
+		onReady.removeAll();
+		onReady.destroy();
+		
+		onFinish.removeAll();
+		onFinish.destroy();
+		
+		onStart.removeAll();
+		onStart.destroy();
+		
+		_videos.remove(this);
+		
 		super.destroy();
 	}
 }
-
-typedef VideoData =
-{
-	file:String,
-	loops:Bool,
-	muted:Bool
-}
-
-enum abstract VidCallbacks(String) to String from String
-{
-	public var ONEND:String = 'onEnd';
-	public var ONSTART:String = 'onStart';
-	public var ONFORMAT:String = 'onFormat';
-}
-
-typedef Location = #if (hxvlc <= "1.5.5") hxvlc.util.OneOfThree<String, Int, Bytes>; #else hxvlc.util.Location; #end

@@ -1,19 +1,19 @@
-package funkin.states;
+package funkin.states.editors;
 
 #if sys
 import sys.io.File;
 #end
 
-class HScriptState extends MusicBeatState
+class HScriptSubstate extends funkin.backend.MusicBeatSubstate
 {
-	public var instance:HScriptState;
+	public var instance:HScriptSubstate;
 
 	public static var currentGlobalScript:String;
 
 	public function new(name:String)
 	{
 		// if u reset the state it forgets the name lmao
-		if (name != null && name != null) currentGlobalScript = name;
+		if (name != null) currentGlobalScript = name;
 		trace(currentGlobalScript);
 
 		setUpScript(currentGlobalScript);

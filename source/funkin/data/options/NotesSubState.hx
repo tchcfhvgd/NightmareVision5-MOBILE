@@ -51,6 +51,9 @@ class NotesSubState extends MusicBeatSubstate
 	{
 		super();
 
+		setUpScript('NotesSubState');
+		setOnScript('this', this);
+		
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		bg.color = 0xFFea71fd;
 		bg.screenCenter();
@@ -99,6 +102,9 @@ class NotesSubState extends MusicBeatSubstate
 		changeSelection();
 
 		addTouchPad("LEFT_FULL", "A_B_C");
+		
+		setOnScript('bg', bg);
+		callOnScript('onCreatePost', []);
 	}
 
 	var changingNote:Bool = false;

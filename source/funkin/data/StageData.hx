@@ -1,5 +1,6 @@
 package funkin.data;
 
+import openfl.Assets;
 #if MODS_ALLOWED
 import sys.io.File;
 import sys.FileSystem;
@@ -54,16 +55,17 @@ class StageData
 		{
 			rawJson = File.getContent(path);
 		}
-		#else
+		else #end
 		if (Assets.exists(path))
 		{
 			rawJson = Assets.getText(path);
 		}
-		#end
 	else
 	{
 		return null;
 	}
+
+		trace(rawJson);
 		return cast Json.parse(rawJson);
 	}
 

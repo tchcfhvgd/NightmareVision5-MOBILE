@@ -28,7 +28,7 @@ class FunkinSoundTray extends FlxSoundTray
 		super();
 		removeChildren();
 
-		var bg:Bitmap = new Bitmap(Assets.getBitmapData(Paths.getPath('images/soundtray/volumebox.png', IMAGE)));
+		var bg:Bitmap = new Bitmap(Assets.getBitmapData('assets/shared/images/soundtray/volumebox.png'));
 		bg.scaleX = graphicScale;
 		bg.scaleY = graphicScale;
 		bg.smoothing = ClientPrefs.globalAntialiasing;
@@ -38,7 +38,7 @@ class FunkinSoundTray extends FlxSoundTray
 		visible = false;
 
 		// makes an alpha'd version of all the bars (bar_10.png)
-		var backingBar:Bitmap = new Bitmap(Assets.getBitmapData(Paths.getPath('images/soundtray/bars_10.png', IMAGE)));
+		var backingBar:Bitmap = new Bitmap(Assets.getBitmapData('assets/shared/images/soundtray/bars_10.png'));
 		backingBar.x = 9;
 		backingBar.y = 5;
 		backingBar.scaleX = graphicScale;
@@ -55,7 +55,7 @@ class FunkinSoundTray extends FlxSoundTray
 		// we are trying to get assets bar_1-10
 		for (i in 1...11)
 		{
-			var bar:Bitmap = new Bitmap(Assets.getBitmapData(Paths.getPath('images/soundtray/bars_$i.png', IMAGE)));
+			var bar:Bitmap = new Bitmap(Assets.getBitmapData('assets/shared/images/soundtray/bars_$i.png'));
 			bar.x = 9;
 			bar.y = 5;
 			bar.scaleX = graphicScale;
@@ -68,9 +68,12 @@ class FunkinSoundTray extends FlxSoundTray
 		y = -height;
 		screenCenter();
 
-		volumeUpSound = Paths.getPath('sounds/soundtray/Volup.${Paths.SOUND_EXT}', SOUND);
-		volumeDownSound = Paths.getPath('sounds/soundtray/Voldown.${Paths.SOUND_EXT}', SOUND);
-		volumeMaxSound = Paths.getPath('sounds/soundtray/VolMAX.${Paths.SOUND_EXT}', SOUND);
+		//flxasset sounds cant use redirect later could rewrite this to use sys stuff
+		volumeUpSound = 'assets/shared/sounds/soundtray/Volup.${Paths.SOUND_EXT}';
+		volumeDownSound = 'assets/shared/sounds/soundtray/Voldown.${Paths.SOUND_EXT}';
+		volumeMaxSound = 'assets/shared/sounds/soundtray/VolMAX.${Paths.SOUND_EXT}';
+
+		
 
 		// trace("Custom tray added!");
 	}

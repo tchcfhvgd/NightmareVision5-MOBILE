@@ -55,6 +55,11 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		#if desktop
 		DiscordClient.changePresence(rpcTitle, null);
 		#end
+		
+		setUpScript('Options');
+		setOnScript('this', this);
+		setOnScript('title', title);
+		trace('options substate stuff whatever');
 
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		bg.color = 0xFFea71fd;
@@ -129,6 +134,14 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		reloadCheckboxes();
 
 		addTouchPad("LEFT_FULL", "A_B_C");
+		
+		setOnScript('bg', bg);
+		setOnScript('grpOptions', grpOptions);
+		setOnScript('grpTexts', grpTexts);
+		setOnScript('checkboxGroup', checkboxGroup);
+		setOnScript('titleText', titleText);
+		setOnScript('descText', descText);
+		callOnScript('onCreatePost', []);
 	}
 
 	public function addOption(option:Option)

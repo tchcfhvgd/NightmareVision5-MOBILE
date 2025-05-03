@@ -1,5 +1,6 @@
 package funkin.objects;
 
+import openfl.utils.Assets;
 import flixel.FlxBasic;
 import flixel.FlxCamera;
 import flixel.FlxG;
@@ -75,6 +76,11 @@ class Stage extends FlxTypedGroup<FlxBasic>
 		{
 			trace('FUCKL');
 			var script = FunkinIris.fromFile(scriptFile);
+			setupScript(script);
+		}
+		else if (Assets.exists(scriptFile))
+		{
+			var script = FunkinIris.fromString(Assets.getText(scriptFile));
 			setupScript(script);
 		}
 		#if LUA_ALLOWED

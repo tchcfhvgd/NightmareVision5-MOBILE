@@ -1,6 +1,5 @@
 package funkin.backend;
 
-import funkin.utils.SortUtil;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import funkin.backend.BaseTransitionState;
 import funkin.states.transitions.SwipeTransition;
@@ -17,8 +16,7 @@ import flixel.util.FlxDestroyUtil;
 
 class MusicBeatState extends FlxUIState
 {
-	// do not touch.
-	@:noCompletion static var _defaultTransState:Class<BaseTransitionState> = SwipeTransition;
+	static final _defaultTransState:Class<BaseTransitionState> = SwipeTransition;
 
 	// change these to change the transition
 	public static var transitionInState:Class<BaseTransitionState> = null;
@@ -188,12 +186,15 @@ class MusicBeatState extends FlxUIState
 			openSubState(sub);
 			sub.setCallback(sub.close);
 		}
+
+		FlxTransitionableState.skipNextTransOut = false;
+
 	}
 
 	public function refreshZ(?group:FlxTypedGroup<FlxBasic>)
 	{
 		group ??= FlxG.state;
-		group.sort(SortUtil.sortByZ, flixel.util.FlxSort.ASCENDING);
+		group.sort(CoolUtil.sortByZ, flixel.util.FlxSort.ASCENDING);
 	}
 
 	override function update(elapsed:Float)
@@ -278,6 +279,7 @@ class MusicBeatState extends FlxUIState
 	public function stepHit():Void
 	{
 		if (curStep % 4 == 0) beatHit();
+		callOnScript('onStepHit', [curStep]);
 	}
 
 	public function beatHit():Void {}
@@ -295,7 +297,7 @@ class MusicBeatState extends FlxUIState
 	override function startOutro(onOutroComplete:() -> Void)
 	{
 		FlxG.sound?.music?.fadeTween?.cancel();
-		FreeplayState.vocals?.fadeTween?.cancel();
+		//FreeplayState.vocals?.fadeTween?.cancel();
 
 		if (FlxG.sound != null && FlxG.sound.music != null) FlxG.sound.music.onComplete = null;
 
@@ -311,7 +313,7 @@ class MusicBeatState extends FlxUIState
 			return;
 		}
 
-		FlxTransitionableState.skipNextTransIn = false;
+		// FlxTransitionableState.skipNextTransIn = false; reverting this change bc i think it might fuck up what i was doing - orbyy
 
 		super.startOutro(onOutroComplete);
 	}

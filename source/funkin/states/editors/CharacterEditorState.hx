@@ -21,12 +21,12 @@ import flixel.addons.ui.FlxUITabMenu;
 import flixel.addons.ui.FlxUITooltip.FlxUITooltipStyle;
 import flixel.ui.FlxButton;
 import flixel.ui.FlxSpriteButton;
+import flixel.addons.ui.FlxUIDropDownMenu;
 import openfl.net.FileReference;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
 import haxe.Json;
 import funkin.objects.Character;
-import flixel.system.debug.interaction.tools.Pointer.GraphicCursorCross;
 import lime.system.Clipboard;
 import flixel.animation.FlxAnimation;
 import funkin.objects.*;
@@ -55,6 +55,7 @@ class CharacterEditorState extends MusicBeatState
 	var curAnim:Int = 0;
 	var daAnim:String = 'spooky';
 	var goToPlayState:Bool = true;
+	var hiddenChars:Array<String> = ['dk', 'bfdiddy', 'diddy-dead'];
 	var camFollow:FlxObject;
 
 	public function new(daAnim:String = 'spooky', goToPlayState:Bool = true)
@@ -89,9 +90,9 @@ class CharacterEditorState extends MusicBeatState
 		camMenu.bgColor.alpha = 0;
 
 		FlxG.cameras.reset(camEditor);
-		FlxG.cameras.add(camHUD);
-		FlxG.cameras.add(camMenu);
-		FlxCamera.defaultCameras = [camEditor];
+		FlxG.cameras.add(camHUD,false);
+		FlxG.cameras.add(camMenu,false);
+		// FlxCamera.defaultCameras = [camEditor];
 
 		bgLayer = new FlxTypedGroup<FlxSprite>();
 		add(bgLayer);
@@ -113,7 +114,7 @@ class CharacterEditorState extends MusicBeatState
 
 		loadChar(!daAnim.startsWith('bf'), false);
 
-		healthBarBG = new FlxSprite(30, FlxG.height - 75).loadGraphic(Paths.image('healthBar'));
+		healthBarBG = new FlxSprite(30, FlxG.height - 75).makeGraphic(600, 20, FlxColor.WHITE);
 		healthBarBG.scrollFactor.set();
 		add(healthBarBG);
 		healthBarBG.cameras = [camHUD];
@@ -293,7 +294,7 @@ class CharacterEditorState extends MusicBeatState
 			var tab_group = new FlxUI(null, UI_box);
 			tab_group.name = "Offsets";
 
-			animationInputText = new FlxUIInputText(15, 30, 100, 'idle', 8);
+			animationInputText = new FlxUIInputTextEx(15, 30, 100, 'idle', 8);
 
 			var addButton:FlxButton = new FlxButton(animationInputText.x + animationInputText.width + 23, animationInputText.y - 2, "Add", function()
 			{
@@ -425,7 +426,7 @@ class CharacterEditorState extends MusicBeatState
 			"scale": 1
 		}';
 
-	var charDropDown:FlxUIDropDownMenuCustom;
+	var charDropDown:FlxUIDropDownMenu;
 
 	function addSettingsUI()
 	{
@@ -442,7 +443,7 @@ class CharacterEditorState extends MusicBeatState
 			ghostChar.flipX = char.flipX;
 		};
 
-		charDropDown = new FlxUIDropDownMenuCustom(10, 30, FlxUIDropDownMenuCustom.makeStrIdLabelArray([''], true), function(character:String) {
+		charDropDown = new FlxUIDropDownMenuEx(10, 30, FlxUIDropDownMenu.makeStrIdLabelArray([''], true), function(character:String) {
 			daAnim = characterList[Std.parseInt(character)];
 			check_player.checked = daAnim.startsWith('bf');
 			loadChar(!check_player.checked);
@@ -527,7 +528,7 @@ class CharacterEditorState extends MusicBeatState
 		var tab_group = new FlxUI(null, UI_box);
 		tab_group.name = "Character";
 
-		imageInputText = new FlxUIInputText(15, 30, 200, 'characters/BOYFRIEND', 8);
+		imageInputText = new FlxUIInputTextEx(15, 30, 200, 'characters/BOYFRIEND', 8);
 		var reloadImage:FlxButton = new FlxButton(imageInputText.x + 210, imageInputText.y - 3, "Reload Image", function() {
 			char.imageFile = imageInputText.text;
 			reloadCharacterImage();
@@ -547,7 +548,7 @@ class CharacterEditorState extends MusicBeatState
 			getEvent(FlxUINumericStepper.CHANGE_EVENT, healthColorStepperB, null);
 		});
 
-		healthIconInputText = new FlxUIInputText(15, imageInputText.y + 35, 75, leHealthIcon.getCharacter(), 8);
+		healthIconInputText = new FlxUIInputTextEx(15, imageInputText.y + 35, 75, leHealthIcon.getCharacter(), 8);
 
 		singDurationStepper = new FlxUINumericStepper(15, healthIconInputText.y + 45, 0.1, 4, 0, 999, 1);
 
@@ -616,8 +617,8 @@ class CharacterEditorState extends MusicBeatState
 		UI_characterbox.addGroup(tab_group);
 	}
 
-	var ghostDropDown:FlxUIDropDownMenuCustom;
-	var animationDropDown:FlxUIDropDownMenuCustom;
+	var ghostDropDown:FlxUIDropDownMenu;
+	var animationDropDown:FlxUIDropDownMenu;
 	var animationInputText:FlxUIInputText;
 	var animationXCam:FlxUINumericStepper;
 	var animationYCam:FlxUINumericStepper;
@@ -631,16 +632,16 @@ class CharacterEditorState extends MusicBeatState
 		var tab_group = new FlxUI(null, UI_box);
 		tab_group.name = "Animations";
 
-		animationInputText = new FlxUIInputText(15, 85, 80, '', 8);
-		animationNameInputText = new FlxUIInputText(animationInputText.x, animationInputText.y + 35, 150, '', 8);
-		animationIndicesInputText = new FlxUIInputText(animationNameInputText.x, animationNameInputText.y + 40, 250, '', 8);
+		animationInputText = new FlxUIInputTextEx(15, 85, 80, '', 8);
+		animationNameInputText = new FlxUIInputTextEx(animationInputText.x, animationInputText.y + 35, 150, '', 8);
+		animationIndicesInputText = new FlxUIInputTextEx(animationNameInputText.x, animationNameInputText.y + 40, 250, '', 8);
 		animationNameFramerate = new FlxUINumericStepper(animationInputText.x + 170, animationInputText.y, 1, 24, 0, 240, 0);
 		animationLoopCheckBox = new FlxUICheckBox(animationNameInputText.x + 170, animationNameInputText.y - 1, null, null, "Should it Loop?", 100);
 
 		animationXCam = new FlxUINumericStepper(animationNameFramerate.x + 75, animationNameFramerate.y, 10, 0, -9000, 9000, 0);
 		animationYCam = new FlxUINumericStepper(animationXCam.x + 75, animationXCam.y, 10, 0, -9000, 9000, 0);
 
-		animationDropDown = new FlxUIDropDownMenuCustom(15, animationInputText.y - 55, FlxUIDropDownMenuCustom.makeStrIdLabelArray([''], true),
+		animationDropDown = new FlxUIDropDownMenuEx(15, animationInputText.y - 55, FlxUIDropDownMenu.makeStrIdLabelArray([''], true),
 			function(pressed:String) {
 				var selectedAnimation:Int = Std.parseInt(pressed);
 				var anim:AnimArray = char.animationsArray[selectedAnimation];
@@ -673,7 +674,7 @@ class CharacterEditorState extends MusicBeatState
 				animationIndicesInputText.text = indicesStr.substr(1, indicesStr.length - 2);
 			});
 
-		ghostDropDown = new FlxUIDropDownMenuCustom(animationDropDown.x + 150, animationDropDown.y, FlxUIDropDownMenuCustom.makeStrIdLabelArray([''], true),
+		ghostDropDown = new FlxUIDropDownMenuEx(animationDropDown.x + 150, animationDropDown.y, FlxUIDropDownMenu.makeStrIdLabelArray([''], true),
 			function(pressed:String) {
 				var selectedAnimation:Int = Std.parseInt(pressed);
 				ghostChar.visible = false;
@@ -1121,8 +1122,8 @@ class CharacterEditorState extends MusicBeatState
 		}
 		if (anims.length < 1) anims.push('NO ANIMATIONS'); // Prevents crash
 
-		animationDropDown.setData(FlxUIDropDownMenuCustom.makeStrIdLabelArray(anims, true));
-		ghostDropDown.setData(FlxUIDropDownMenuCustom.makeStrIdLabelArray(ghostAnims, true));
+		animationDropDown.setData(FlxUIDropDownMenu.makeStrIdLabelArray(anims, true));
+		ghostDropDown.setData(FlxUIDropDownMenu.makeStrIdLabelArray(ghostAnims, true));
 		reloadGhost();
 	}
 
@@ -1186,7 +1187,7 @@ class CharacterEditorState extends MusicBeatState
 					if (!sys.FileSystem.isDirectory(path) && file.endsWith('.json'))
 					{
 						var charToCheck:String = file.substr(0, file.length - 5);
-						if (!charsLoaded.exists(charToCheck))
+						if (!hiddenChars.contains(charToCheck) && !charsLoaded.exists(charToCheck))
 						{
 							characterList.push(charToCheck);
 							charsLoaded.set(charToCheck, true);
@@ -1199,7 +1200,7 @@ class CharacterEditorState extends MusicBeatState
 		characterList = CoolUtil.coolTextFile(Paths.txt('characterList'));
 		#end
 
-		charDropDown.setData(FlxUIDropDownMenuCustom.makeStrIdLabelArray(characterList, true));
+		charDropDown.setData(FlxUIDropDownMenu.makeStrIdLabelArray(characterList, true));
 		charDropDown.selectedLabel = daAnim;
 	}
 

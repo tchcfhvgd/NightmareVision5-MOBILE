@@ -2,6 +2,7 @@ package funkin.objects;
 
 import funkin.objects.*;
 import funkin.data.*;
+import funkin.data.scripts.*;
 import funkin.states.*;
 import funkin.states.substates.*;
 import flixel.FlxG;
@@ -94,6 +95,8 @@ class Character extends FlxSprite
 
 	public var hasMissAnimations:Bool = false;
 
+	public var curCharacterScript:FunkinScript;
+
 	// Used on Character Editor
 	public var imageFile:String = '';
 	public var jsonScale:Float = 1;
@@ -109,30 +112,56 @@ class Character extends FlxSprite
 	{
 		var characterPath:String = 'characters/' + character + '.json';
 
-		#if MODS_ALLOWED
+		//bad but whatever idont got time to rewrite dis
 		var path:String = Paths.modFolders(characterPath);
 		if (!FileSystem.exists(path))
 		{
-			path = Paths.getSharedPath(characterPath);
+			path = Paths.getPath(characterPath);
 		}
 
-		if (!FileSystem.exists(path))
-		#else
-		var path:String = Paths.getSharedPath(characterPath);
-		if (!Assets.exists(path))
-		#end
+
+		var exists = Assets.exists(path);
+		if (!exists)
+		{
+			exists = FileSystem.exists(path);
+		}
+
+		if (!exists)
 		{
 			path = Paths.getSharedPath('characters/' + DEFAULT_CHARACTER +
 				'.json'); // If a character couldn't be found, change him to BF just to prevent a crash
 		}
 
-		#if MODS_ALLOWED
-		var rawJson = File.getContent(path);
-		#else
-		var rawJson = Assets.getText(path);
-		#end
 
-		return cast Json.parse(rawJson);
+		var json = Assets.exists(path) ? Assets.getText(path) : File.getContent(path);
+
+		return cast Json.parse(json);
+
+
+		// #if MODS_ALLOWED
+		// var path:String = Paths.modFolders(characterPath);
+		// if (!FileSystem.exists(path))
+		// {
+		// 	path = Paths.getSharedPath(characterPath);
+		// }
+
+		// if (!FileSystem.exists(path))
+		// #else
+		// var path:String = Paths.getSharedPath(characterPath);
+		// if (!Assets.exists(path))
+		// #end
+		// {
+		// 	path = Paths.getSharedPath('characters/' + DEFAULT_CHARACTER +
+		// 		'.json'); // If a character couldn't be found, change him to BF just to prevent a crash
+		// }
+
+		// #if MODS_ALLOWED
+		// var rawJson = File.getContent(path);
+		// #else
+		// var rawJson = Assets.getText(path);
+		// #end
+
+		// return cast Json.parse(rawJson);
 	}
 
 	public function new(x:Float, y:Float, ?character:String = 'bf', ?isPlayer:Bool = false)
@@ -289,35 +318,23 @@ class Character extends FlxSprite
 		if (isPlayer)
 		{
 			flipX = !flipX;
-
-			/*// Doesn't flip for BF, since his are already in the right place???
-				if (!curCharacter.startsWith('bf'))
-				{
-					// var animArray
-					if(animation.getByName('singLEFT') != null && animation.getByName('singRIGHT') != null)
-					{
-						var oldRight = animation.getByName('singRIGHT').frames;
-						animation.getByName('singRIGHT').frames = animation.getByName('singLEFT').frames;
-						animation.getByName('singLEFT').frames = oldRight;
-					}
-
-					// IF THEY HAVE MISS ANIMATIONS??
-					if (animation.getByName('singLEFTmiss') != null && animation.getByName('singRIGHTmiss') != null)
-					{
-						var oldMiss = animation.getByName('singRIGHTmiss').frames;
-						animation.getByName('singRIGHTmiss').frames = animation.getByName('singLEFTmiss').frames;
-						animation.getByName('singLEFTmiss').frames = oldMiss;
-					}
-			}*/
 		}
 
-		// switch(curCharacter)
-		// {
-		// 	case 'pico-speaker':
-		// 		skipDance = true;
-		// 		loadMappedAnims();
-		// 		playAnim("shoot1");
-		// }
+		final baseScriptFile:String = 'characters/' + character;
+
+		var scriptFile = FunkinIris.getPath(baseScriptFile);
+		if (FileSystem.exists(scriptFile))
+		{
+			var script = FunkinIris.fromFile(scriptFile);
+			curCharacterScript = script;
+		}
+		#if LUA_ALLOWED
+		else if (Paths.fileExists('$baseScriptFile.lua', TEXT))
+		{
+			var script = new FunkinLua('$baseScriptFile.lua');
+			//curCharacterScript = scriptFile;
+		}
+		#end
 	}
 
 	override function update(elapsed:Float)
@@ -590,7 +607,6 @@ class Character extends FlxSprite
 		ghost.flipX = flipX;
 		ghost.flipY = flipY;
 		ghost.alpha = alpha * 0.6;
-		ghost.antialiasing = antialiasing;
 		ghost.visible = true;
 		ghost.color = FlxColor.fromRGB(healthColorArray[0], healthColorArray[1], healthColorArray[2]);
 		ghost.animation.play(AnimName, Force, Reversed, Frame);

@@ -55,6 +55,9 @@ class StoryMenuState extends MusicBeatState
 		if (curWeek >= WeekData.weeksList.length) curWeek = 0;
 		persistentUpdate = persistentDraw = true;
 
+		setUpScript('StoryMenuState');
+		
+		if(isHardcodedState()){
 		scoreText = new FlxText(10, 10, 0, "SCORE: 49324858", 36);
 		scoreText.setFormat("VCR OSD Mono", 32);
 
@@ -181,10 +184,14 @@ class StoryMenuState extends MusicBeatState
 
 		changeWeek();
 		changeDifficulty();
+		
+		}
 
 		super.create();
 
 		addTouchPad("LEFT_FULL", "A_B_X_Y");
+	
+	    callOnScript('onCreatePost', []);
 	}
 
 	override function closeSubState()
@@ -192,12 +199,14 @@ class StoryMenuState extends MusicBeatState
 		persistentUpdate = true;
 		removeTouchPad();
 		addTouchPad("LEFT_FULL", "A_B_X_Y");
+		if(isHardcodedState())
 		changeWeek();
 		super.closeSubState();
 	}
 
 	override function update(elapsed:Float)
 	{
+		if(isHardcodedState()){
 		// scoreText.setFormat('VCR OSD Mono', 32);
 		lerpScore = Math.floor(FlxMath.lerp(lerpScore, intendedScore, FlxMath.bound(elapsed * 30, 0, 1)));
 		if (Math.abs(intendedScore - lerpScore) < 10) lerpScore = intendedScore;
@@ -255,13 +264,16 @@ class StoryMenuState extends MusicBeatState
 			movedBack = true;
 			FlxG.switchState(new MainMenuState());
 		}
+		}
 
 		super.update(elapsed);
 
+		if(isHardcodedState()){
 		grpLocks.forEach(function(lock:FlxSprite) {
 			lock.y = grpWeekText.members[lock.ID].y;
 			lock.visible = (lock.y > FlxG.height / 2);
 		});
+		}
 	}
 
 	var movedBack:Bool = false;

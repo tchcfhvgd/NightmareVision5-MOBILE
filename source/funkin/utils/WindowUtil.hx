@@ -1,6 +1,8 @@
 package funkin.utils;
 
+import openfl.Lib;
 import lime.app.Application;
+import flash.system.System;
 
 // WIP
 // functions used to mess with some window properties for ease
@@ -17,6 +19,10 @@ class WindowUtil
 
 	static function get_defaultAppTitle():String return Application.current.meta['name'];
 
+	public static function crashTheFuckingGame(){
+		System.exit(0);
+	}
+
 	public static function getWindow()
 	{
 		return Application.current.window;
@@ -24,7 +30,7 @@ class WindowUtil
 
 	public static function setTitle(?arg:String, append:Bool = false)
 	{
-		arg ??= defaultAppTitle;
+		if (arg == null) arg = defaultAppTitle;
 
 		if (append) getWindow().title += arg;
 		else getWindow().title = arg;
@@ -63,5 +69,17 @@ class WindowUtil
 		var s = new funkin.backend.FunkinRatioScaleMode();
 		s.height = scaledHeight;
 		FlxG.scaleMode = s;
+	}
+
+	public static inline function centerWindowOnPoint(?point:FlxPoint) {
+		Lib.application.window.x = Std.int(point.x - (Lib.application.window.width / 2));
+		Lib.application.window.y = Std.int(point.y - (Lib.application.window.height / 2));
+	}
+
+	public static inline function getCenterWindowPoint():FlxPoint {
+		return FlxPoint.get(
+			Lib.application.window.x + (Lib.application.window.width / 2),
+			Lib.application.window.y + (Lib.application.window.height / 2)
+		);
 	}
 }

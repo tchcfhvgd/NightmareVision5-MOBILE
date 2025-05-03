@@ -24,6 +24,7 @@ typedef WeekFile =
 	var hideStoryMode:Bool;
 	var hideFreeplay:Bool;
 	var difficulties:String;
+	var beanDiffs:Array<Int>;
 }
 
 class WeekData
@@ -46,6 +47,7 @@ class WeekData
 	public var hideStoryMode:Bool;
 	public var hideFreeplay:Bool;
 	public var difficulties:String;
+	public var beanDiffs:Array<Int>;
 
 	public var fileName:String;
 
@@ -65,6 +67,7 @@ class WeekData
 				weekName: 'Custom Week',
 				freeplayColor: [146, 113, 253],
 				startUnlocked: true,
+				beanDiffs: [3, 4],
 				hiddenUntilUnlocked: false,
 				hideStoryMode: false,
 				hideFreeplay: false,
@@ -88,6 +91,7 @@ class WeekData
 		hideStoryMode = weekFile.hideStoryMode;
 		hideFreeplay = weekFile.hideFreeplay;
 		difficulties = weekFile.difficulties;
+		beanDiffs = weekFile.beanDiffs;
 
 		this.fileName = fileName;
 	}

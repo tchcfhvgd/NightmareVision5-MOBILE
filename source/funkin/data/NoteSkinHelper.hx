@@ -3,6 +3,7 @@ package funkin.data;
 import haxe.Json;
 import haxe.format.JsonParser;
 import funkin.objects.*;
+import flixel.math.FlxPoint;
 
 // havent implemented this
 typedef Animation =
@@ -21,8 +22,14 @@ typedef NoteSkinData =
 	?opponentSkin:String,
 	?extraSkin:String,
 	?noteSplashSkin:String,
+	?noteCoverSkin:String,
 	?hasQuants:Bool,
-
+	?isQuants:Bool
+	,
+	?isPixel:Bool,
+	?pixelSize:Array<Int>,
+	?antialiasing:Bool,
+	?sustainSuffix:String,
 	/*
 		[
 			{ anim: "idle", xmlName: "fuck", offsets: [x, y]},
@@ -48,6 +55,8 @@ typedef NoteSkinData =
 	 */
 	?noteSplashAnimations:Array<Animation>,
 
+	?noteCoverAnimations:Array<Array<Animation>>,
+
 	?singAnimations:Array<String>
 }
 
@@ -55,6 +64,7 @@ class NoteSkinHelper
 {
 	static final defaultTexture:String = 'NOTE_assets';
 	static final defaultSplashTexture:String = 'noteSplashes';
+	static final defaultCoverTexture:String = 'noteHoldCovers';
 
 	static final defaultNoteAnimations:Array<Array<Animation>> = [
 		[
@@ -226,7 +236,23 @@ class NoteSkinHelper
 		{anim: "note2", xmlName: "note splash green", offsets: [0, 0]},
 		{anim: "note3", xmlName: "note splash red", offsets: [0, 0]}
 	];
+	static final defaultNoteCoverAnimations:Array<Array<Animation>> = [
+		[{anim: "note0start", xmlName: "purplestart", offsets: [0, 0]},
+		{anim: "note0loop", xmlName: "purpleloop", offsets: [0, 0]},
+		{anim: "note0end", xmlName: "purpleend", offsets: [0, 0]}],
 
+		[{anim: "note1start", xmlName: "bluestart", offsets: [0, 0]},
+		{anim: "note1loop", xmlName: "blueloop", offsets: [0, 0]},
+		{anim: "note1end", xmlName: "blueend", offsets: [0, 0]}],
+		
+		[{anim: "note2start", xmlName: "greenstart", offsets: [0, 0]},
+		{anim: "note2loop", xmlName: "greenloop", offsets: [0, 0]},
+		{anim: "note2end", xmlName: "greenend", offsets: [0, 0]}],
+
+		[{anim: "note3start", xmlName: "redstart", offsets: [0, 0]},
+		{anim: "note3loop", xmlName: "redloop", offsets: [0, 0]},
+		{anim: "note3end", xmlName: "redend", offsets: [0, 0]}]
+	];
 	public static final fallbackReceptorAnims:Array<Animation> = [
 		{
 			color: "",
@@ -276,15 +302,21 @@ class NoteSkinHelper
 		data.opponentSkin ??= data.globalSkin;
 		data.extraSkin ??= data.globalSkin;
 		data.noteSplashSkin ??= defaultSplashTexture;
+		data.noteCoverSkin ??= defaultCoverTexture;
 		data.hasQuants ??= false;
+		data.isQuants ??= false;
+
+		data.isPixel ??= false;
+		data.pixelSize ??= [4, 5];
+		data.antialiasing ??=true;
+		data.sustainSuffix ??= 'ENDS';
 
 		data.noteAnimations ??= defaultNoteAnimations;
 		data.receptorAnimations ??= defaultReceptorAnimations;
 		data.noteSplashAnimations ??= defaultNoteSplashAnimations;
+		data.noteCoverAnimations ??= defaultNoteCoverAnimations;
 
 		data.singAnimations ??= defaultSingAnimations;
-
-		// trace('\nNOTESKIN DATA\n\nSKINS\nGlobal: "${data.globalSkin}"\nPlayer: "${data.playerSkin}\nOpponent: "${data.opponentSkin}"\n\nQUANTS? [${data.hasQuants}\n\nNOTE ANIMATIONS\n${data.noteAnimations}\n${data.noteOffsets}\n\nRECEPTOR ANIMATIONS\n${data.receptorAnimations}\n${data.receptorOffsets}\n\nNOTE SPLASHES\n${data.noteSplashSkin}\n${data.noteSplashAnimations}\n${data.noteSplashOffsets}');
 	}
 
 	public static function parseJSON(rawJson:String):NoteSkinData
@@ -302,9 +334,10 @@ class NoteSkinHelper
 		Note.handler = helper;
 		StrumNote.handler = helper;
 		NoteSplash.handler = helper;
+		NoteSustainCover.handler = helper;
 
 		Note.keys = keys;
 		StrumNote.keys = keys;
-		NoteSplash.keys = keys;
+		NoteSustainCover.keys = keys;
 	}
 }

@@ -1,5 +1,5 @@
 #if !macro
-// mobile
+//mobile
 import mobile.StorageUtil;
 // flixel
 import flixel.FlxG;
@@ -13,7 +13,7 @@ import flixel.tweens.FlxEase;
 import flixel.util.FlxTimer;
 import flixel.FlxBasic;
 import flixel.math.FlxPoint;
-import flixel.system.FlxSound;
+import flixel.sound.FlxSound;
 #if sys
 import sys.io.*;
 import sys.*;

@@ -1,52 +1,242 @@
 package funkin.data.scripts;
 
+import openfl.Assets;
 import funkin.data.scripts.FunkinScript;
 import funkin.utils.MacroUtil;
 import crowplexus.iris.IrisConfig;
 import crowplexus.iris.Iris;
+import crowplexus.hscript.*;
 import funkin.objects.*;
 
-class InterpEX extends crowplexus.hscript.Interp 
+class InterpEX extends crowplexus.hscript.Interp
 {
-	override function makeIterator(v: Dynamic): Iterator<Dynamic> 
+	override function makeIterator(v:Dynamic):Iterator<Dynamic>
 	{
 		#if ((flash && !flash9) || (php && !php7 && haxe_ver < '4.0.0'))
 		if (v.iterator != null)
 			v = v.iterator();
 		#else
-		//DATA CHANGE //does a null check because this crashes on debug build
-		if (v.iterator != null) try v = v.iterator() catch (e:Dynamic) {};
+		// DATA CHANGE //does a null check because this crashes on debug build
+		if (v.iterator != null)
+			try
+				v = v.iterator()
+			catch (e:Dynamic)
+			{
+			};
 		#end
 		if (v.hasNext == null || v.next == null)
 			error(EInvalidIterator(v));
 		return v;
 	}
+
+	public var parent(default, set):Dynamic = [];
+
+	var parentFields:Array<String> = [];
+
+	public function new(?parent:Dynamic)
+	{
+		super();
+		parent ??= FlxG.state;
+		this.parent = parent;
+		showPosOnLog = false;
+	}
+
+	function set_parent(value:Dynamic):Dynamic
+	{
+		parent = value;
+		parentFields = value != null ? Type.getInstanceFields(Type.getClass(value)) : [];
+		return parent;
+	}
+
+	override function fcall(o:Dynamic, funcToRun:String, args:Array<Dynamic>):Dynamic
+	{
+		for (_using in usings)
+		{
+			var v = _using.call(o, funcToRun, args);
+			if (v != null)
+				return v;
+		}
+
+		var f = get(o, funcToRun);
+
+		if (f == null)
+		{
+			Iris.error('Tried to call null function $funcToRun', posInfos());
+			return null;
+		}
+
+		return Reflect.callMethod(o, f, args);
+	}
+
+	override function resolve(id:String):Dynamic
+	{
+		if (locals.exists(id))
+		{
+			var l = locals.get(id);
+			return l.r;
+		}
+
+		if (variables.exists(id))
+		{
+			var v = variables.get(id);
+			return v;
+		}
+
+		if (imports.exists(id))
+		{
+			var v = imports.get(id);
+			return v;
+		}
+
+		if (parent != null && parentFields.contains(id))
+		{
+			var v = Reflect.getProperty(parent, id);
+			if (v != null)
+				return v;
+		}
+
+		error(EUnknownVariable(id));
+
+		return null;
+	}
+
+	// better direct access to the parent
+	override function evalAssignOp(op, fop, e1, e2):Dynamic
+	{
+		var v;
+		switch (Tools.expr(e1))
+		{
+			case EIdent(id):
+				var l = locals.get(id);
+				v = fop(expr(e1), expr(e2));
+				if (l == null)
+				{
+					if (parentFields.contains(id))
+					{
+						Reflect.setProperty(parent, id, v);
+					}
+					else
+					{
+						setVar(id, v);
+					}
+				}
+				else
+				{
+					if (l.const != true)
+						l.r = v;
+					else
+						warn(ECustom("Cannot reassign final, for constant expression -> " + id));
+				}
+			case EField(e, f, s):
+				var obj = expr(e);
+				if (obj == null)
+					if (!s)
+						error(EInvalidAccess(f));
+					else
+						return null;
+				v = fop(get(obj, f), expr(e2));
+				v = set(obj, f, v);
+			case EArray(e, index):
+				var arr:Dynamic = expr(e);
+				var index:Dynamic = expr(index);
+				if (isMap(arr))
+				{
+					v = fop(getMapValue(arr, index), expr(e2));
+					setMapValue(arr, index, v);
+				}
+				else
+				{
+					v = fop(arr[index], expr(e2));
+					arr[index] = v;
+				}
+			default:
+				return error(EInvalidOp(op));
+		}
+		return v;
+	}
+
+	// better direct access to the parent
+	override function assign(e1:Expr, e2:Expr):Dynamic
+	{
+		var v = expr(e2);
+		switch (Tools.expr(e1))
+		{
+			case EIdent(id):
+				var l = locals.get(id);
+				if (l == null)
+				{
+					if (!variables.exists(id) && parentFields.contains(id))
+					{
+						Reflect.setProperty(parent, id, v);
+					}
+					else
+					{
+						setVar(id, v);
+					}
+				}
+				else
+				{
+					if (l.const != true)
+						l.r = v;
+					else
+						warn(ECustom("Cannot reassign final, for constant expression -> " + id));
+				}
+			case EField(e, f, s):
+				var e = expr(e);
+				if (e == null)
+					if (!s)
+						error(EInvalidAccess(f));
+					else
+						return null;
+				v = set(e, f, v);
+			case EArray(e, index):
+				var arr:Dynamic = expr(e);
+				var index:Dynamic = expr(index);
+				if (isMap(arr))
+				{
+					setMapValue(arr, index, v);
+				}
+				else
+				{
+					arr[index] = v;
+				}
+
+			default:
+				error(EInvalidOp("="));
+		}
+		return v;
+	}
 }
-
-
-
 
 // thank you crow,neeo
 // wrapper for an iris script to keep the consistency of the whole funkyscript setup this engine got
+
 @:access(crowplexus.iris.Iris)
 @:access(funkin.states.PlayState)
 class FunkinIris extends FunkinScript
 {
-	public static final exts:Array<String> = ['hx', 'hxs', 'hscript', 'hxc'];
+	public static final exts:Array<String> = ['hx', 'hxs', 'hscript'];
 
 	public static function getPath(path:String, ?global:Bool = true)
 	{
 		for (extension in exts)
 		{
-			if (path.endsWith(extension)) return path;
-
+			if (path.endsWith(extension))
+				return path;
 
 			final file = '$path.$extension';
 
 			for (i in [Paths.modFolders(file, global), Paths.getSharedPath(file)])
 			{
-				if (!FileSystem.exists(i)) continue;
+				if (!FileSystem.exists(i))
+					continue;
 				return i;
+			}
+
+			var tempPath = Paths.getPath(file);
+			if (Assets.exists(tempPath))
+			{
+				return tempPath;
 			}
 		}
 		return path;
@@ -59,39 +249,51 @@ class FunkinIris extends FunkinScript
 
 	public static function fromFile(file:String, ?name:String, ?additionalVars:Map<String, Any>)
 	{
-		if (name == null) name = file;
+		if (name == null)
+			name = file;
 
 		return new FunkinIris(File.getContent(file), name, additionalVars);
 	}
 
 	public static function InitLogger()
 	{
-		Iris.warn = (x, ?pos) -> {
+		Iris.warn = (x, ?pos) ->
+		{
 			final message:String = '[${pos.fileName}]: WARN: ${pos.lineNumber} -> $x';
 			PlayState.instance?.addTextToDebug(message, FlxColor.YELLOW);
 
 			FlxG.log.warn(message);
+			// trace(message);
 
 			Iris.logLevel(ERROR, x, pos);
 		}
 
-		Iris.error = (x, ?pos) -> {
+		Iris.error = (x, ?pos) ->
+		{
 			final message:String = '[${pos.fileName}]: ERROR: ${pos.lineNumber} -> $x';
 			PlayState.instance?.addTextToDebug(message, FlxColor.RED);
 
 			FlxG.log.error(message);
+			// trace(message);
 
 			Iris.logLevel(NONE, x, pos);
 		}
 
-		Iris.print = (x, ?pos) -> {
+		Iris.print = (x, ?pos) ->
+		{
 			final message:String = '[${pos.fileName}]: TRACE: ${pos.lineNumber} -> $x';
 			PlayState.instance?.addTextToDebug(message);
+
+			// FlxG.log.add(message);
+
+			// trace(message);
 
 			Iris.logLevel(NONE, x, pos);
 		}
 	}
-	
+
+	public static var defaultVars:Map<String, Dynamic> = new Map<String, Dynamic>();
+
 	public var _script:Iris;
 
 	public var parsingException:Null<String> = null;
@@ -102,8 +304,7 @@ class FunkinIris extends FunkinScript
 		scriptName = name;
 
 		_script = new Iris(script, {name: name, autoRun: false, autoPreset: false});
-		_script.interp = new InterpEX();
-		_script.interp.showPosOnLog = false;
+		_script.interp = new InterpEX(FlxG.state);
 
 		setDefaultVars();
 
@@ -135,7 +336,8 @@ class FunkinIris extends FunkinScript
 
 	override function stop()
 	{
-		if (_script == null) return;
+		if (_script == null)
+			return;
 
 		_script.destroy();
 		_script = null;
@@ -154,7 +356,8 @@ class FunkinIris extends FunkinScript
 	override function call(func:String, ?args:Array<Dynamic>):Dynamic
 	{
 		var ret:Dynamic = funkin.data.scripts.Globals.Function_Continue;
-		if (exists(func)) ret = _script.call(func, args)?.returnValue ?? funkin.data.scripts.Globals.Function_Continue;
+		if (exists(func))
+			ret = _script.call(func, args)?.returnValue ?? funkin.data.scripts.Globals.Function_Continue;
 
 		return ret;
 	}
@@ -177,7 +380,8 @@ class FunkinIris extends FunkinScript
 				var returnVal:Any = null;
 				var defaultShit:Map<String, Dynamic> = [];
 
-				if (theObject != null) extraVars.set("this", theObject);
+				if (theObject != null)
+					extraVars.set("this", theObject);
 
 				for (key in extraVars.keys())
 				{
@@ -243,7 +447,7 @@ class FunkinIris extends FunkinScript
 		set("FlxRuntimeShader", flixel.addons.display.FlxRuntimeShader);
 		set("FlxFlicker", flixel.effects.FlxFlicker);
 		set('FlxSpriteUtil', flixel.util.FlxSpriteUtil);
-		//set('AnimateSprite', flxanimate.AnimateSprite);
+		set('AnimateSprite', flxanimate.AnimateSprite);
 		set("FlxBackdrop", flixel.addons.display.FlxBackdrop);
 		set("FlxTiledSprite", flixel.addons.display.FlxTiledSprite);
 
@@ -314,6 +518,7 @@ class FunkinIris extends FunkinScript
 		set("Character", Character);
 		set("NoteSplash", NoteSplash);
 		set("BGSprite", BGSprite);
+		set('SpriteFromSheet', SpriteFromSheet);
 		set("StrumNote", StrumNote);
 		set("Alphabet", Alphabet);
 		set("AttachedSprite", AttachedSprite);
@@ -343,15 +548,20 @@ class FunkinIris extends FunkinScript
 			set("global", state.variables);
 			set("getInstance", funkin.data.scripts.Globals.getInstance);
 
+			// why is ther hscriptglobals and variables when they achieve the same thign maybe kill off one or smth
 			set('setGlobalFunc', (name:String, func:Dynamic) -> state.variables.set(name, func));
-			set('callGlobalFunc', (name:String, ?args:Dynamic) -> {
-				if (state.variables.exists(name)) return state.variables.get(name)(args);
-				else return null;
+			set('callGlobalFunc', (name:String, ?args:Dynamic) ->
+			{
+				if (state.variables.exists(name))
+					return state.variables.get(name)(args);
+				else
+					return null;
 			});
 		}
 
 		// todo rework this
-		set("newShader", function(fragFile:String = null, vertFile:String = null) { // returns a FlxRuntimeShader but with file names lol
+		set("newShader", function(fragFile:String = null, vertFile:String = null)
+		{ // returns a FlxRuntimeShader but with file names lol
 			var runtime:flixel.addons.display.FlxRuntimeShader = null;
 
 			try

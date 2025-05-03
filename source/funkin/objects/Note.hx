@@ -115,6 +115,7 @@ class Note extends FlxSprite
 
 	public var colorSwap:ColorSwap;
 	public var inEditor:Bool = false;
+	public var skipScale:Bool = false;
 	public var gfNote:Bool = false;
 	public var baseScaleX:Float = 1;
 	public var baseScaleY:Float = 1;
@@ -174,6 +175,8 @@ class Note extends FlxSprite
 	public var desiredPlayfield:PlayField; // incase a note should be put into a specific playfield
 
 	public static var defaultNotes = ['No Animation', 'GF Sing', ''];
+
+	public var animOffsets:Map<String, Array<Float>> = new Map();
 
 	public function set_playField(field:PlayField)
 	{
@@ -333,10 +336,17 @@ class Note extends FlxSprite
 
 		this.noteData = noteData;
 
-		/*if(noteData > 4 && !isSustainNote)
+		centerOffsets();
+
+		for (i in 0...handler.data.noteAnimations[noteData].length)
+		{
+			if (handler != null)
 			{
-				visible = false;
-		}*/
+				addOffset(handler.data.noteAnimations[noteData][i].anim, handler.data.noteAnimations[noteData][i].offsets[0], handler.data.noteAnimations[noteData][i].offsets[1]);
+			}
+		}
+
+		var animToPlay:String = '';
 
 		if (noteData > -1)
 		{
@@ -347,12 +357,17 @@ class Note extends FlxSprite
 			x += swagWidth * (noteData % keys);
 			if (!isSustainNote)
 			{ // Doing this 'if' check to fix the warnings on Senpai songs
-				var animToPlay:String = handler.data.noteAnimations[noteData][0].color + "Scroll";
+
+				animToPlay = handler.data.noteAnimations[noteData][0].color + "Scroll";
 				animation.play(animToPlay);
+
+				if (animOffsets.exists(animToPlay)) // the way this works rn lowkey sucksssssss a lil
+				{
+					offset.set(offset.x + animOffsets.get(animToPlay)[0], offset.y + animOffsets.get(animToPlay)[1]);
+				}
+	
 			}
 		}
-
-		// trace(prevNote);
 
 		if (prevNote != null) prevNote.nextNote = this;
 
@@ -361,28 +376,40 @@ class Note extends FlxSprite
 			alpha = 0.6;
 			multAlpha = 0.6;
 			hitsoundDisabled = true;
-			// if(ClientPrefs.downScroll) flipY = true;
 
 			offsetX += width / 2;
 			copyAngle = false;
 
+			animToPlay = handler.data.noteAnimations[noteData][0].color + "holdend";
 			animation.play(handler.data.noteAnimations[noteData][0].color + "holdend");
 			updateHitbox();
 
 			offsetX -= width / 2;
-
-			if (PlayState.isPixelStage) offsetX += 30;
+			/*
+			if (animOffsets.exists(handler.data.noteAnimations[noteData][0].color + "holdend"))
+			{
+				offset.set(offset.x + animOffsets.get(handler.data.noteAnimations[noteData][0].color + "holdend")[0], offset.y + animOffsets.get(handler.data.noteAnimations[noteData][0].color + "holdend")[1]);
+			}
+			*/
+			if (handler.data.isPixel) offsetX += 30;
 
 			if (prevNote.isSustainNote)
 			{
+				animToPlay = handler.data.noteAnimations[noteData][0].color + "hold";
 				prevNote.animation.play(handler.data.noteAnimations[noteData][0].color + "hold");
+				/*
+				if (animOffsets.exists(handler.data.noteAnimations[noteData][0].color + "holdend"))
+				{
+					offset.set(offset.x + animOffsets.get(handler.data.noteAnimations[noteData][0].color + "hold")[0], offset.y + animOffsets.get(handler.data.noteAnimations[noteData][0].color + "hold")[1]);
+				}
+				*/
 				prevNote.scale.y *= Conductor.stepCrotchet / 100 * 1.05;
 				if (PlayState.instance != null)
 				{
 					prevNote.scale.y *= PlayState.instance.songSpeed;
 				}
 
-				if (PlayState.isPixelStage)
+				if (handler.data.isPixel)
 				{
 					prevNote.scale.y *= 1.19;
 					prevNote.scale.y *= (6 / height); // Auto adjust note size
@@ -393,7 +420,7 @@ class Note extends FlxSprite
 				// prevNote.setGraphicSize();
 			}
 
-			if (PlayState.isPixelStage)
+			if (handler.data.isPixel)
 			{
 				scale.y *= PlayState.daPixelZoom;
 				updateHitbox();
@@ -406,6 +433,11 @@ class Note extends FlxSprite
 		x += offsetX;
 		baseScaleX = scale.x;
 		baseScaleY = scale.y;
+
+		if (animOffsets.exists(animToPlay))
+		{
+			offset.set(offset.x + animOffsets.get(animToPlay)[0], offset.y + animOffsets.get(animToPlay)[1]);
+		}
 	}
 
 	var lastNoteOffsetXForPixelAutoAdjusting:Float = 0;
@@ -446,41 +478,23 @@ class Note extends FlxSprite
 
 		var lastScaleY:Float = scale.y;
 		var blahblah:String = arraySkin.join('/');
-		isQuant = false;
-		if (PlayState.isPixelStage)
+		isQuant = (ClientPrefs.noteSkin == 'Quants' || ClientPrefs.noteSkin == "QuantStep") && handler.data.isQuants;
+		if (handler.data.isPixel)
 		{
 			if (isSustainNote)
 			{
-				if ((ClientPrefs.noteSkin == 'Quants' || ClientPrefs.noteSkin == "QuantStep") && canQuant)
-				{
-					if (Assets.exists(Paths.getPath("images/pixelUI/QUANT" + blahblah + "ENDS.png", IMAGE))
-						|| FileSystem.exists(Paths.modsImages("pixelUI/QUANT" + blahblah + "ENDS")))
-					{
-						blahblah = "QUANT" + blahblah;
-						isQuant = true;
-					}
-				}
-				loadGraphic(Paths.image('pixelUI/' + blahblah + 'ENDS'));
+				loadGraphic(Paths.image(blahblah + handler.data.sustainSuffix));
 				width = width / 4;
 				height = height / 2;
 				originalHeightForCalcs = height;
-				loadGraphic(Paths.image('pixelUI/' + blahblah + 'ENDS'), true, Math.floor(width), Math.floor(height));
+				loadGraphic(Paths.image(blahblah + handler.data.sustainSuffix), true, Math.floor(width), Math.floor(height));
 			}
 			else
 			{
-				if ((ClientPrefs.noteSkin == 'Quants' || ClientPrefs.noteSkin == "QuantStep") && canQuant)
-				{
-					if (Assets.exists(Paths.getPath("images/pixelUI/QUANT" + blahblah + ".png", IMAGE))
-						|| FileSystem.exists(Paths.modsImages("pixelUI/QUANT" + blahblah)))
-					{
-						blahblah = "QUANT" + blahblah;
-						isQuant = true;
-					}
-				}
-				loadGraphic(Paths.image('pixelUI/' + blahblah));
-				width = width / 4;
-				height = height / 5;
-				loadGraphic(Paths.image('pixelUI/' + blahblah), true, Math.floor(width), Math.floor(height));
+				loadGraphic(Paths.image(blahblah));
+				width = width / handler.data.pixelSize[0];
+				height = height / handler.data.pixelSize[1];
+				loadGraphic(Paths.image(blahblah), true, Math.floor(width), Math.floor(height));
 			}
 			setGraphicSize(Std.int(width * PlayState.daPixelZoom));
 			loadPixelNoteAnims();
@@ -502,17 +516,6 @@ class Note extends FlxSprite
 		}
 		else
 		{
-			if ((ClientPrefs.noteSkin == 'Quants' || ClientPrefs.noteSkin == "QuantStep") && canQuant)
-			{
-				if (Assets.exists(Paths.getPath("images/QUANT" + blahblah + ".png", IMAGE))
-					|| FileSystem.exists(Paths.modsImages("QUANT" + blahblah)))
-				{ // this can probably only be done once and then added to some sort of cache
-					// soon:tm:
-					blahblah = "QUANT" + blahblah;
-					isQuant = true;
-					// trace(blahblah);
-				}
-			}
 			frames = Paths.getSparrowAtlas(blahblah);
 			loadNoteAnims();
 			antialiasing = ClientPrefs.globalAntialiasing;
@@ -527,13 +530,18 @@ class Note extends FlxSprite
 
 		if (animName != null) animation.play(animName, true);
 
-		if (inEditor)
+		if (inEditor && !skipScale)
 		{
 			setGraphicSize(ChartingState.GRID_SIZE, ChartingState.GRID_SIZE);
 			updateHitbox();
 			baseScaleX = scale.x;
 			baseScaleY = scale.y;
 		}
+
+		antialiasing = handler.data.antialiasing;
+		if(handler.data.antialiasing)
+			antialiasing = ClientPrefs.globalAntialiasing;
+
 
 		if (noteScript != null && noteScript.scriptType == HSCRIPT)
 		{
@@ -658,5 +666,10 @@ class Note extends FlxSprite
 		clipRect = rect;
 		if (frames != null) frame = frames.frames[animation.frameIndex];
 		return rect;
+	}
+
+	public function addOffset(name:String, x:Float = 0, y:Float = 0)
+	{
+		animOffsets[name] = [x, y];
 	}
 }

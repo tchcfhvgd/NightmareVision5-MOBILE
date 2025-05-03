@@ -17,12 +17,15 @@ import flixel.addons.ui.FlxUIInputText;
 import flixel.addons.ui.FlxUINumericStepper;
 import flixel.addons.ui.FlxUITabMenu;
 import flixel.addons.ui.FlxUITooltip.FlxUITooltipStyle;
+import flixel.addons.transition.FlxTransitionableState;
 import haxe.Json;
 import haxe.ds.Vector;
 import openfl.events.Event;
 import openfl.net.FileReference;
 import openfl.events.IOErrorEvent;
 import openfl.events.KeyboardEvent;
+import funkin.states.substates.Prompt;
+import flixel.addons.ui.FlxUIDropDownMenu;
 
 using StringTools;
 
@@ -44,9 +47,12 @@ class NoteSkinEditor extends MusicBeatState
 	//     return value;
 	// }
 	var handler:NoteSkinHelper;
-	var name:String = '';
+	public static var name:String = null;
+	public static var reset:Bool = true;
 	var keys:Int = 4;
 	var lanes:Int = 1;
+	var skinList:Array<String> = [];
+	var curskin:String = 'default';
 
 	var arrowSkin:String = '';
 	var arrowSkins:Array<String> = [];
@@ -63,7 +69,7 @@ class NoteSkinEditor extends MusicBeatState
 
 	private var blockPressWhileTypingOn:Array<FlxUIInputText> = [];
 	private var blockPressWhileTypingOnStepper:Array<FlxUINumericStepper> = [];
-	private var blockPressWhileScrolling:Array<FlxUIDropDownMenuCustom> = [];
+	private var blockPressWhileScrolling:Array<FlxUIDropDownMenu> = [];
 
 	public var script_NOTEOffsets:Vector<FlxPoint>;
 	public var script_STRUMOffsets:Vector<FlxPoint>;
@@ -74,24 +80,42 @@ class NoteSkinEditor extends MusicBeatState
 	public var playFields:FlxTypedGroup<PlayField>;
 	public var ghostFields:FlxTypedGroup<PlayField>;
 	public var noteSplashes:FlxTypedGroup<NoteSplash>;
-	public var notes:FlxTypedGroup<Note>;
+	public var notes:Array<Array<Note>>;
 
 	var noteSeparationShit = [];
 
 	var receptorAnimArray = [];
 
-	public function new(path:String, overrideHandler:NoteSkinHelper = null)
+	public function new(path:String, oh:NoteSkinHelper = null)
 	{
 		super();
 
 		path ??= 'default';
+		setupHelper(path, oh);		
+	}
 
-		if (overrideHandler != null) handler = overrideHandler;
-		else handler = new NoteSkinHelper(Paths.noteskin(path));
+	function helperLoading(n)
+	{
+		var noteskin:NoteSkinHelper = null;
+
+		if (FileSystem.exists(Paths.modsNoteskin(n)))
+			noteskin = new NoteSkinHelper(Paths.modsNoteskin(n));
+		else if (FileSystem.exists(Paths.noteskin(n)))
+			noteskin = new NoteSkinHelper(Paths.noteskin(n));
+
+		noteskin ??= new NoteSkinHelper(Paths.noteskin('default'));
+
+		return noteskin;
+	}
+
+	function setupHelper(n:String = 'default', oh:NoteSkinHelper = null)
+	{
+		if (oh != null) handler = oh;
+		else handler = helperLoading(n);
 
 		NoteSkinHelper.setNoteHelpers(handler, handler.data.noteAnimations.length);
 
-		name = path;
+		name = n;
 		keys = handler.data.noteAnimations.length;
 		arrowSkin = handler.data.globalSkin;
 		arrowSkins = [handler.data.playerSkin, handler.data.opponentSkin];
@@ -140,8 +164,7 @@ class NoteSkinEditor extends MusicBeatState
 		hud.bgColor.alpha = 0;
 
 		FlxG.cameras.reset(camEditor);
-		FlxG.cameras.add(hud);
-		FlxCamera.defaultCameras = [camEditor];
+		FlxG.cameras.add(hud,false);
 
 		camFollow = new FlxObject(0, 0, 2, 2);
 		camFollow.screenCenter();
@@ -157,13 +180,20 @@ class NoteSkinEditor extends MusicBeatState
 		super.create();
 
 		ghostFields = new FlxTypedGroup<PlayField>();
+		ghostFields.zIndex = 0;
 		add(ghostFields);
+		
 		playFields = new FlxTypedGroup<PlayField>();
+		playFields.zIndex = 1;
 		add(playFields);
+		
 		noteSplashes = new FlxTypedGroup<NoteSplash>();
+		noteSplashes.zIndex = 2;
 		add(noteSplashes);
-		notes = new FlxTypedGroup<Note>();
-		add(notes);
+
+		notes = [];
+
+		// refreshZ(members);
 
 		var splash:NoteSplash = new NoteSplash(100, 100, 0);
 		noteSplashes.add(splash);
@@ -183,6 +213,7 @@ class NoteSkinEditor extends MusicBeatState
 		infoText.camera = hud;
 
 		var tabs = [
+			{name: "Pixel Settings", label: "Pixel Settings"},
 			{name: "Textures & Settings", label: "Textures & Settings"},
 			{name: "Animations", label: "Animations"}
 		];
@@ -196,7 +227,9 @@ class NoteSkinEditor extends MusicBeatState
 
 		addTexturesUI();
 		addAnimationsUI();
+		addPixelUI();
 
+		reloadUIElements();
 		postext();
 
 		setMode(STRUMS);
@@ -270,6 +303,16 @@ class NoteSkinEditor extends MusicBeatState
 				}
 			case NOTES:
 				//
+				for(group in notes){
+					for(note in group){
+						if(FlxG.mouse.overlaps(note)){
+							note.alpha = 1;
+							if(FlxG.mouse.justPressed) trace(note);
+						}else{
+							note.alpha = 0.6;
+						}
+					}
+				}
 		}
 
 		if (!blockInput)
@@ -395,23 +438,13 @@ class NoteSkinEditor extends MusicBeatState
 							// FlxG.watch.addQuick('offsets', handler.data.noteSplashAnimations[curSelected].offsets);
 						}
 					}
-				case NOTES:
-					// for(note in notes.members){
-					//     for(strum in ghostFields.members){
-					//         for(strumnote in strum.members){
-					//             if(note != null){
-					//                 var anim = handler.data.noteAnimations[strumnote.noteData];
-					//                 note.x = strumnote.x + anim[note.ID].offsets[0];
-					//                 note.y = (strumnote.y + anim[note.ID].offsets[1]) + noteSeparationShit[note.ID];
-					//             }
-					//         }
-					//     }
-					// }
+				case NOTES:	
+					//
 			}
 
 			if (FlxG.keys.justPressed.ESCAPE)
 			{
-				FlxG.switchState(new MainMenuState());
+				FlxG.switchState(new TitleState());
 			}
 
 			if (FlxG.keys.pressed.CONTROL)
@@ -469,6 +502,11 @@ class NoteSkinEditor extends MusicBeatState
 		updateText(receptorAnimArray[curSelectedNote.noteData][curSelected]);
 	}
 
+	function noteSelectShit(n:Note)
+	{
+		curSelectedNote = n;
+	}
+
 	function updateText(anim:String)
 	{
 		infoText.text = 'MODE: ${modeToString()}\n\n';
@@ -520,38 +558,51 @@ class NoteSkinEditor extends MusicBeatState
 
 	function regenNotes()
 	{
-		notes.clear();
-
-		for (strum in ghostFields.members)
-		{
-			for (strumnote in strum.members)
-			{
-				var note:Note = new Note(0, strumnote.noteData);
-				note.alpha = 1;
-				note.ID = 0;
-
-				var sus:Note = new Note(0, strumnote.noteData);
-				sus.alpha = 1;
-				sus.ID = 1;
-
-				var susend:Note = new Note(0, strumnote.noteData, sus);
-				susend.alpha = 1;
-				susend.ID = 2;
-
-				notes.add(susend);
-				notes.add(sus);
-				notes.add(note);
-
-				noteSeparationShit = [
-					strumnote.height,
-					strumnote.height + note.height,
-					strumnote.height + note.height + sus.height
-				];
-				for (p in [note /*, sus, susend*/])
+		if(notes.length == 0){
+			for (strum in ghostFields.members)
 				{
-					var anim = handler.data.noteAnimations[strumnote.noteData];
-					p.x = strumnote.x + anim[note.ID].offsets[0];
-					p.y = (strumnote.y + anim[note.ID].offsets[1]) + noteSeparationShit[note.ID];
+					for (strumnote in strum.members)
+					{
+						var note:Note = new Note(0, strumnote.noteData);
+						note.alpha = 1;
+						note.ID = 0;
+		
+						var sus:Note = new Note(0, strumnote.noteData, null, true);
+						sus.alpha = 1;
+						sus.ID = 1;
+		
+						var susend:Note = new Note(0, strumnote.noteData, sus, true);
+						susend.alpha = 1;
+						susend.ID = 2;
+		
+						noteSeparationShit = [
+							strumnote.height,
+							strumnote.height + note.height,
+							strumnote.height + note.height + (sus.height * 1.5)
+						];
+
+						notes.push([note, sus, susend]);
+
+						var count = -1;
+						for (p in [note, sus, susend])
+						{
+							p.inEditor = true;
+							p.skipScale = true;
+							p.reloadNote();
+							p.zIndex = 3;
+							add(p);
+
+							count ++;
+							var anim = handler.data.noteAnimations[strumnote.noteData];
+							p.x = (strumnote.x + ((strumnote.width - p.width) / 2)) + anim[note.ID].offsets[0];
+							p.y = (strumnote.y + anim[note.ID].offsets[1]) + (noteSeparationShit[count]);
+						}
+					}
+				}		
+		}else{
+			for(group in notes){
+				for(note in group){
+					note.reloadNote();
 				}
 			}
 		}
@@ -645,6 +696,16 @@ class NoteSkinEditor extends MusicBeatState
 		resetStrumline();
 	}
 
+	function regenEverything(){
+		reloadUIElements();
+
+		regenPlayfields();
+		regenSplashes();
+		regenNotes();
+
+		reloadDropdown();
+	}
+
 	var lol:Array<Array<Int>> = [];
 
 	function resetStrumline()
@@ -727,8 +788,11 @@ class NoteSkinEditor extends MusicBeatState
 	var opponentInput:FlxUIInputText;
 	var extraInput:FlxUIInputText;
 	var splashesInput:FlxUIInputText;
-	var quantsCheck:FlxUICheckBox;
+	var hasQuantsCheck:FlxUICheckBox;
+	var isQuantsCheck:FlxUICheckBox;
+	var keysStepper:FlxUINumericStepper;
 	var nameInput:FlxUIInputText;
+	var skinDropDown:FlxUIDropDownMenu;
 
 	function addTexturesUI()
 	{
@@ -736,54 +800,79 @@ class NoteSkinEditor extends MusicBeatState
 		tab_group.name = "Textures & Settings";
 		tab_group.camera = hud;
 
-		globalInput = new FlxUIInputText(15, 30, 150, 'NOTE_assets', 8);
+		globalInput = new FlxUIInputTextEx(15, 30, 150, handler.data.globalSkin, 8);
 		blockPressWhileTypingOn.push(globalInput);
 
-		playerInput = new FlxUIInputText(15, 60, 150, 'NOTE_assets', 8);
+		playerInput = new FlxUIInputTextEx(15, 60, 150, handler.data.playerSkin, 8);
 		blockPressWhileTypingOn.push(playerInput);
 
-		opponentInput = new FlxUIInputText(15, 90, 150, 'NOTE_assets', 8);
+		opponentInput = new FlxUIInputTextEx(15, 90, 150, handler.data.opponentSkin, 8);
 		blockPressWhileTypingOn.push(opponentInput);
 
-		extraInput = new FlxUIInputText(15, 120, 150, 'NOTE_assets', 8);
+		extraInput = new FlxUIInputTextEx(15, 120, 150, handler.data.extraSkin, 8);
 		blockPressWhileTypingOn.push(extraInput);
 
-		splashesInput = new FlxUIInputText(15, 150, 150, 'noteSplashes', 8);
+		splashesInput = new FlxUIInputTextEx(15, 150, 150, handler.data.noteSplashSkin, 8);
 		blockPressWhileTypingOn.push(splashesInput);
 
 		var reloadImage:FlxButton = new FlxButton(globalInput.x + 110, 30 + (70 / 2), "Reload Textures", function() {
-			handler.data.globalSkin = globalInput.text;
-			handler.data.playerSkin = playerInput.text;
-			handler.data.opponentSkin = opponentInput.text;
-			handler.data.extraSkin = extraInput.text;
-			handler.data.noteSplashSkin = splashesInput.text;
+			
+			var fuck = 'Is your noteskin a pixel noteskin? Make sure to check the box if so\nDid you type the texture name incorrectly?\n\nCheck all of these, and click the button to load textures!';
 
-			regenPlayfields();
+			infoText.visible = false;	
+			openSubState(new Prompt(fuck, 0, ()->{
+				infoText.visible = true;
+				handler.data.globalSkin = globalInput.text;
+				handler.data.playerSkin = playerInput.text;
+				handler.data.opponentSkin = opponentInput.text;
+				handler.data.extraSkin = extraInput.text;
+				handler.data.noteSplashSkin = splashesInput.text;
+	
+				regenPlayfields();
+				regenSplashes();
+				regenNotes();
+			}, null, false, null, null, 10));
 		});
 		reloadImage.width += 50;
 		reloadImage.x = (150 - reloadImage.width) / 2;
 		reloadImage.y = 180;
 
-		quantsCheck = new FlxUICheckBox(180, 27.5, null, null, "Quants?", 50);
-		quantsCheck.checked = handler.data.hasQuants;
-		quantsCheck.callback = () -> {
-			handler.data.hasQuants = quantsCheck.checked;
+		hasQuantsCheck = new FlxUICheckBox(180, 27.5, null, null, "HAS quants?", 50);
+		hasQuantsCheck.checked = handler.data.hasQuants;
+		hasQuantsCheck.callback = () -> {
+			handler.data.hasQuants = hasQuantsCheck.checked;
 		}
 
-		var lanesStepper:FlxUINumericStepper = new FlxUINumericStepper(180, 87.5, 1, 1, 1, 3);
+		isQuantsCheck = new FlxUICheckBox(180, 57.5, null, null, "IS quants?", 50);
+		isQuantsCheck.checked = handler.data.isQuants;
+		isQuantsCheck.callback = () -> {
+			handler.data.isQuants = isQuantsCheck.checked;
+		}
+
+
+
+		var lanesStepper:FlxUINumericStepper = new FlxUINumericStepper(180, 127.5, 1, 1, 1, 3);
 		lanesStepper.value = lanes;
 		lanesStepper.name = 'lanes';
 
-		var keysStepper:FlxUINumericStepper = new FlxUINumericStepper(180, 117.5, 1, 4, 4, 8);
+		keysStepper = new FlxUINumericStepper(180, 157.5, 1, 4, 4, 8);
 		keysStepper.value = lanes;
 		keysStepper.name = 'keys';
 
-		nameInput = new FlxUIInputText(quantsCheck.x + quantsCheck.width + 10, 30, 100, name, 8);
+		skinDropDown = new FlxUIDropDownMenuEx(hasQuantsCheck.x + hasQuantsCheck.width + 10, 90, FlxUIDropDownMenu.makeStrIdLabelArray([''], true), (skin)->{
+			setupHelper(skinList[Std.parseInt(skin)]);
+
+			regenEverything();
+			setMode(STRUMS);
+			trace('set skin to $name');
+		});
+		reloadDropdown();
+		skinDropDown.selectedLabel = name;
+		
+		nameInput = new FlxUIInputTextEx(hasQuantsCheck.x + hasQuantsCheck.width + 10, 30, 100, name, 8);
 		blockPressWhileTypingOn.push(nameInput);
 
-		var saveSkin:FlxButton = new FlxButton(nameInput.x, nameInput.y + 30, "Save Skin", function() {
-			saveSkin();
-		});
+		var saveSkin:FlxButton = new FlxButton(nameInput.x, nameInput.y + 30, "Save Skin", saveSkin);
 
 		tab_group.add(new FlxText(15, globalInput.y - 13, 0, 'Global texture name:'));
 		tab_group.add(new FlxText(15, playerInput.y - 13, 0, 'Player texture name:'));
@@ -799,17 +888,19 @@ class NoteSkinEditor extends MusicBeatState
 		tab_group.add(extraInput);
 		tab_group.add(splashesInput);
 		tab_group.add(reloadImage);
-		tab_group.add(quantsCheck);
+		tab_group.add(hasQuantsCheck);
+		tab_group.add(isQuantsCheck);
 		tab_group.add(lanesStepper);
 		tab_group.add(keysStepper);
 		tab_group.add(nameInput);
 		tab_group.add(saveSkin);
+		tab_group.add(skinDropDown);
 
 		UI_box.addGroup(tab_group);
 		trace('added texture / settings ui');
 	}
 
-	var animationDropDown:FlxUIDropDownMenuCustom;
+	var animationDropDown:FlxUIDropDownMenu;
 	var animationInputText:FlxUIInputText;
 	var animationNameInputText:FlxUIInputText;
 	var animationColorInputText:FlxUIInputText;
@@ -820,13 +911,13 @@ class NoteSkinEditor extends MusicBeatState
 		var tab_group = new FlxUI(null, UI_box);
 		tab_group.name = "Animations";
 
-		animationInputText = new FlxUIInputText(15, 85, 80, '', 8);
-		animationNameInputText = new FlxUIInputText(animationInputText.x, animationInputText.y + 35, 150, '', 8);
-		animationColorInputText = new FlxUIInputText(animationInputText.x, animationInputText.y + 35, 150, '', 8);
+		animationInputText = new FlxUIInputTextEx(15, 85, 80, '', 8);
+		animationNameInputText = new FlxUIInputTextEx(animationInputText.x, animationInputText.y + 35, 150, '', 8);
+		animationColorInputText = new FlxUIInputTextEx(animationInputText.x, animationInputText.y + 35, 150, '', 8);
 
-		animationColorInputText = new FlxUIInputText(animationNameInputText.x, animationNameInputText.y + 40, 250, '', 8);
+		animationColorInputText = new FlxUIInputTextEx(animationNameInputText.x, animationNameInputText.y + 40, 250, '', 8);
 
-		animationDropDown = new FlxUIDropDownMenuCustom(15, animationInputText.y - 55, FlxUIDropDownMenuCustom.makeStrIdLabelArray([''], true),
+		animationDropDown = new FlxUIDropDownMenuEx(15, animationInputText.y - 55, FlxUIDropDownMenu.makeStrIdLabelArray([''], true),
 			function(pressed:String) {
 				selectedAnimation = Std.parseInt(pressed);
 				var anim:Dynamic = null;
@@ -987,7 +1078,49 @@ class NoteSkinEditor extends MusicBeatState
 		}
 		if (animations.length < 1) animations.push('NO ANIMATIONS'); // Prevents crash
 
-		animationDropDown.setData(FlxUIDropDownMenuCustom.makeStrIdLabelArray(animations, true));
+		animationDropDown.setData(FlxUIDropDownMenu.makeStrIdLabelArray(animations, true));
+	}
+
+	var sustainInput:FlxUIInputText;
+	var pixelCheck:FlxUICheckBox;
+	var pixelFrameWidth:FlxUINumericStepper;
+	var pixelFrameHeight:FlxUINumericStepper;
+	var antialiasingCheck:FlxUICheckBox;
+	
+	function addPixelUI()
+	{
+		var tab_group = new FlxUI(null, UI_box);
+		tab_group.name = "Pixel Settings";
+
+		sustainInput = new FlxUIInputTextEx(15, 30, 150, handler.data.sustainSuffix, 8);
+		blockPressWhileTypingOn.push(sustainInput);
+
+		pixelCheck = new FlxUICheckBox(175, 30, null, null, "Pixel Notes?", 100);
+		pixelCheck.checked = handler.data.isPixel;
+		pixelCheck.callback = ()->{ handler.data.isPixel = pixelCheck.checked; }
+
+		pixelFrameWidth = new FlxUINumericStepper(175, 70, 1, 4, 1, 8);
+		pixelFrameWidth.value = handler.data.pixelSize[0];
+		pixelFrameWidth.name = 'frame width';
+
+		pixelFrameHeight = new FlxUINumericStepper(175, 100, 1, 2, 1, 8);
+		pixelFrameHeight.value = handler.data.pixelSize[1];
+		pixelFrameHeight.name = 'frame height';
+
+		antialiasingCheck = new FlxUICheckBox(175, 140, null, null, "Anti-Aliasing?", 100);
+		antialiasingCheck.checked = handler.data.antialiasing;
+		antialiasingCheck.callback = ()->{ handler.data.antialiasing = antialiasingCheck.checked; }
+
+		tab_group.add(new FlxText(15, sustainInput.y - 13, 0, 'Pixel Sustain Texture Suffix:'));
+		tab_group.add(new FlxText(175, pixelFrameWidth.y - 13, 0, 'Width division factor:'));
+		tab_group.add(new FlxText(175, pixelFrameHeight.y - 13, 0, 'Height division factor:'));
+		tab_group.add(sustainInput);
+		tab_group.add(pixelCheck);
+		tab_group.add(pixelFrameWidth);
+		tab_group.add(pixelFrameHeight);
+		tab_group.add(antialiasingCheck);
+
+		UI_box.addGroup(tab_group);
 	}
 
 	function setMode(mode)
@@ -1013,9 +1146,9 @@ class NoteSkinEditor extends MusicBeatState
 				{
 					m.visible = false;
 				}
-				for (m in notes.members)
+				for (m in notes)
 				{
-					m.visible = false;
+					for(n in m){n.visible = false;}
 				}
 			case SPLASHES:
 				for (m in playFields.members)
@@ -1030,9 +1163,9 @@ class NoteSkinEditor extends MusicBeatState
 				{
 					m.visible = true;
 				}
-				for (m in notes.members)
+				for (m in notes)
 				{
-					m.visible = false;
+					for(n in m){n.visible = false;}
 				}
 			case NOTES:
 				for (m in playFields.members)
@@ -1047,9 +1180,9 @@ class NoteSkinEditor extends MusicBeatState
 				{
 					m.visible = false;
 				}
-				for (m in notes.members)
+				for (m in notes)
 				{
-					m.visible = true;
+					for(n in m){n.visible = true;}
 				}
 				//
 		}
@@ -1085,7 +1218,74 @@ class NoteSkinEditor extends MusicBeatState
 						}
 					}
 					regenPlayfields();
+				case 'frame width':
+					handler.data.pixelSize[0] = Std.int(nums.value);
+				case 'frame height':
+					handler.data.pixelSize[1] = Std.int(nums.value);
 			}
+		}
+	}
+
+	function reloadDropdown(){
+		var skinsLoaded:Map<String, Bool> = new Map();
+
+		// #if MODS_ALLOWED
+		skinList = [];
+		var directories:Array<String> = [
+			Paths.mods('noteskins/'),
+			Paths.mods(Paths.currentModDirectory + '/noteskins/'),
+			Paths.getSharedPath('noteskins/')
+		];
+		for (mod in Paths.getGlobalMods())
+			directories.push(Paths.mods(mod + '/noteskins/'));
+		for (i in 0...directories.length)
+		{
+			var directory:String = directories[i];
+			if (FileSystem.exists(directory))
+			{
+				for (file in FileSystem.readDirectory(directory))
+				{
+					var path = haxe.io.Path.join([directory, file]);
+					if (!sys.FileSystem.isDirectory(path) && file.endsWith('.json'))
+					{
+						var charToCheck:String = file.substr(0, file.length - 5);
+						if (!skinsLoaded.exists(charToCheck))
+						{
+							skinList.push(charToCheck);
+							skinsLoaded.set(charToCheck, true);
+						}
+					}
+				}
+			}
+		}
+		// #else
+		// skinList = CoolUtil.coolTextFile(Paths.txt('noteskin_list'));
+		// #end
+
+		skinDropDown.setData(FlxUIDropDownMenu.makeStrIdLabelArray(skinList, true));
+		skinDropDown.selectedLabel = name;
+	}
+
+	function reloadUIElements(){
+		if(UI_box != null){
+			globalInput.text = handler.data.globalSkin;
+			playerInput.text = handler.data.playerSkin;
+			opponentInput.text = handler.data.opponentSkin;
+			extraInput.text = handler.data.extraSkin;
+			splashesInput.text = handler.data.noteSplashSkin;
+			hasQuantsCheck.checked = handler.data.hasQuants;
+			isQuantsCheck.checked = handler.data.isQuants;
+			keysStepper.value = keys;
+			nameInput.text = name;
+
+			reloadAnimationDropDown();
+			resetStrumline();
+
+			sustainInput.text = handler.data.sustainSuffix;
+			pixelCheck.checked = handler.data.isPixel;
+			pixelFrameWidth.value = handler.data.pixelSize[0];
+			pixelFrameHeight.value = handler.data.pixelSize[1];
+			antialiasingCheck.checked = handler.data.antialiasing;
 		}
 	}
 
@@ -1134,6 +1334,12 @@ class NoteSkinEditor extends MusicBeatState
 				"extraSkin": handler.data.extraSkin,
 				"noteSplashSkin": handler.data.noteSplashSkin,
 				"hasQuants": handler.data.hasQuants,
+				"isQuants": handler.data.isQuants,
+				
+				"isPixel": handler.data.isPixel,
+				"pixelSize": handler.data.pixelSize,
+				"antialiasing": handler.data.antialiasing,
+				"sustainSuffix": handler.data.sustainSuffix,
 
 				"noteAnimations": handler.data.noteAnimations,
 

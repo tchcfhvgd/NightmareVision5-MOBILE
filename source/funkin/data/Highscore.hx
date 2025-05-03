@@ -10,6 +10,7 @@ class Highscore
 	public static var songRankData:Map<String, SongScoreData> = new Map();
 
 	public static var weekScores:Map<String, Int> = new Map();
+	public static var weekRatings:Map<String, Float> = new Map();
 	public static var songScores:Map<String, Int> = new Map();
 	public static var songRating:Map<String, Float> = new Map();
 
@@ -24,6 +25,7 @@ class Highscore
 	{
 		var daWeek:String = formatSong(week, diff);
 		setWeekScore(daWeek, 0);
+		setWeekRating(daWeek, 0);
 	}
 
 	public static function saveScore(song:String, score:Int = 0, ?diff:Int = 0, ?rating:Float = -1):Void
@@ -56,6 +58,17 @@ class Highscore
 		else setWeekScore(daWeek, score);
 	}
 
+	public static function saveWeekRating(week:String, score:Float = 0, ?diff:Int = 0):Void
+	{
+		var daWeek:String = formatSong(week, diff);
+
+		if (weekRatings.exists(daWeek))
+		{
+			if (weekRatings.get(daWeek) < score) setWeekRating(daWeek, score);
+		}
+		else setWeekRating(daWeek, score);
+	}
+
 	/**
 	 * YOU SHOULD FORMAT SONG WITH formatSong() BEFORE TOSSING IN SONG VARIABLE
 	 */
@@ -72,6 +85,15 @@ class Highscore
 		// Reminder that I don't need to format this song, it should come formatted!
 		weekScores.set(week, score);
 		FlxG.save.data.weekScores = weekScores;
+		FlxG.save.flush();
+	}
+
+	static function setWeekRating(week:String, rating:Float):Void
+	{
+		// Reminder that I don't need to format this song, it should come formatted!
+		weekRatings.set(week, rating);
+		// Additonal note, when setting the week rating, make sure you divided the number by the amount of songs when passing it to this function
+		FlxG.save.data.weekRatings = weekRatings;
 		FlxG.save.flush();
 	}
 
@@ -112,11 +134,23 @@ class Highscore
 		return weekScores.get(daWeek);
 	}
 
+	public static function getWeekRating(week:String, diff:Int):Float
+	{
+		var daWeek:String = formatSong(week, diff);
+		if (!weekRatings.exists(daWeek)) setWeekRating(daWeek, 0);
+
+		return weekRatings.get(daWeek);
+	}
+
 	public static function load():Void
 	{
 		if (FlxG.save.data.weekScores != null)
 		{
 			weekScores = FlxG.save.data.weekScores;
+		}
+		if (FlxG.save.data.weekRatings != null)
+		{
+			weekRatings = FlxG.save.data.weekRatings;
 		}
 		if (FlxG.save.data.songScores != null)
 		{

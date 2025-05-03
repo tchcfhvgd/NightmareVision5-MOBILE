@@ -11,7 +11,38 @@ import llua.State;
 
 class DiscordClient
 {
-	public static var discordPresences:Array<String> = [];
+	public static var discordPresences:Array<String> = [
+		'Pegging Aren\'t I funny',
+		'Pegging Aren\'t I funny 2',
+		'The Green Peg from Peggle Song',
+		'VS The Orange One',
+		'B\'jornin\'',
+		'Tickle Party (Freeplay)',
+		'Finale (2026 remaster)',
+		'Top 5',
+		'Impostor Incident',
+		'Trolla Baby',
+		'Oversight',
+		'Dripcore',
+		'Monotone Attack 2: "That\'s Right You Have To Play Another Inside Joke Song To 100% The Mod"',
+		'Legacy Moogus',
+		'Overworld - HP: 400 - Mana: 200',
+		'the guy from esculent\'s funeral',
+		'DAREDEVIL',
+		'Too-Slow',
+		'Red vs. Afton',
+		'Daddy Queerest',
+		'Mongy Monday',
+		'Tomongus Tuesday',
+		'White Boy Wednesday',
+		'Tomongus Tuesday 2: Thursday',
+		'TERRARIA IS A BETTER GAME THAN PALWORLD IF YOU\'RE READING THIS AND DISAGREE FUCK YOU',
+		'Boing Resussed',
+		'Aaaaaaaand it\'s inappropriate',
+		'Hopefully a good song',
+		'Probably one of the bad songs',
+		'Another song with that pizzicato voice. Great.'
+	];
 
 	public static var isInitialized:Bool = false;
 
@@ -20,7 +51,7 @@ class DiscordClient
 		trace("Discord Client starting...");
 		DiscordRpc.start(
 			{
-				clientID: "1252033037680513115",
+				clientID: "1276234319852994754",
 				onReady: onReady,
 				onError: onError,
 				onDisconnected: onDisconnected
@@ -106,4 +137,5 @@ class DiscordClient
 	}
 	#end
 }
+
 #end

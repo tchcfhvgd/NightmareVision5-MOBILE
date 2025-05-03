@@ -33,15 +33,17 @@ class Prompt extends MusicBeatSubstate
 	var buttonAccept:FlxButton;
 	var buttonNo:FlxButton;
 	var cornerSize:Int = 10;
+	var fontSize:Int = 16;
 
 	public function new(promptText:String = '', defaultSelected:Int = 0, okCallback:Void->Void, cancelCallback:Void->Void, acceptOnDefault:Bool = false,
-			option1:String = null, option2:String = null)
+			option1:String = null, option2:String = null, _fontSize:Int = 16)
 	{
 		selected = defaultSelected;
 		okc = okCallback;
 		cancelc = cancelCallback;
 		theText = promptText;
 		goAnyway = acceptOnDefault;
+		fontSize = _fontSize;
 
 		var op1 = 'OK';
 		var op2 = 'CANCEL';
@@ -91,7 +93,7 @@ class Prompt extends MusicBeatSubstate
 			add(buttonAccept);
 			add(buttonNo);
 			// add(buttons);
-			var textshit:FlxText = new FlxText(buttonNo.width * 2, panel.y, 300, theText, 16);
+			var textshit:FlxText = new FlxText(buttonNo.width * 2, panel.y, 300, theText, fontSize);
 			textshit.alignment = 'center';
 			add(textshit);
 			textshit.screenCenter();
