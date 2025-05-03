@@ -1218,12 +1218,12 @@ class PlayState extends MusicBeatState
 			{
 				if (lane == 0)
 				{
-					playerStrums = new PlayField(ClientPrefs.middleScroll ? (FlxG.width / 2) : FlxG.width / 2
-						+ (FlxG.width / 4), strumLine.y, SONG.keys, boyfriend, true, cpuControlled, lane);
+					playerStrums = new PlayField(ClientPrefs.middleScroll ? (FlxG.width / 2) : FlxG.width / 2 + (FlxG.width / 4), strumLine.y, SONG.keys,
+						boyfriend, true, cpuControlled, lane);
 					playerStrums.noteHitCallback = goodNoteHit;
 					playerStrums.noteMissCallback = noteMiss;
 					playerStrums.playerControls = true;
-					// playerStrums.autoPlayed = false;
+					playerStrums.autoPlayed = false;
 					callOnScripts('preReceptorGeneration', [playerStrums, lane]);
 					playerStrums.generateReceptors();
 					playerStrums.fadeIn(isStoryMode || skipArrowStartTween);
@@ -1233,7 +1233,8 @@ class PlayState extends MusicBeatState
 				}
 				else if (lane == 1)
 				{
-					opponentStrums = new PlayField(ClientPrefs.middleScroll ? (FlxG.width / 2) : (FlxG.width / 2 - (FlxG.width / 4)), strumLine.y, SONG.keys, dad, false, true, 1);
+					opponentStrums = new PlayField(ClientPrefs.middleScroll ? (FlxG.width / 2) : (FlxG.width / 2 - (FlxG.width / 4)), strumLine.y, SONG.keys,
+						dad, false, true, 1);
 					opponentStrums.noteHitCallback = opponentNoteHit;
 					// opponentStrums.noteMissCallback = noteMiss;
 					if (!ClientPrefs.opponentStrums) opponentStrums.baseAlpha = 0;
@@ -1291,13 +1292,13 @@ class PlayState extends MusicBeatState
 			modManager.lanes = SONG.lanes;
 			
 			callOnHScripts('preModifierRegister', []);
-			modManager.registerEssentialModifiers();
+			modManager.registerDefaultModifiers();
 			callOnHScripts('postModifierRegister', []);
 			
 			new FlxTimer().start(countdownDelay, (t:FlxTimer) -> {
 				startedCountdown = mobileControls.instance.visible = true;
 				Conductor.songPosition = 0;
-				Conductor.songPosition -= Conductor.crotchet * countdownLoops;
+				Conductor.songPosition -= Conductor.crotchet * 5;
 				setOnLuas('startedCountdown', true);
 				callOnScripts('onCountdownStarted', []);
 				
@@ -1345,72 +1346,99 @@ class PlayState extends MusicBeatState
 					}
 					
 					var introAssets:Map<String, Array<String>> = new Map<String, Array<String>>();
-					introAssets.set('default', ['get-ready', 'ready', 'set', 'go']);
-					introAssets.set('pixel', ['pixelUI/get-ready', 'pixelUI/ready-pixel', 'pixelUI/set-pixel', 'pixelUI/date-pixel']);
+					introAssets.set('default', ['ready', 'set', 'go']);
+					introAssets.set('pixel', ['pixelUI/ready-pixel', 'pixelUI/set-pixel', 'pixelUI/date-pixel']);
 					
 					var introAlts:Array<String> = introAssets.get('default');
+					var antialias:Bool = ClientPrefs.globalAntialiasing;
 					if (isPixelStage)
 					{
 						introAlts = introAssets.get('pixel');
+						antialias = false;
 					}
 					
 					switch (swagCounter)
 					{
 						case 0:
-							countdownGetReady = makeCountdownSprite(introAlts[0]);
-							insert(members.indexOf(notes), countdownGetReady);
-							
 							if (countdownSounds) FlxG.sound.play(Paths.sound('intro3' + introSoundsSuffix), 0.6);
 						case 1:
-							countdownReady = makeCountdownSprite(introAlts[1]);
+							countdownReady = new FlxSprite().loadGraphic(Paths.image(introAlts[0]));
+							countdownReady.scrollFactor.set();
+							countdownReady.updateHitbox();
+							
+							if (PlayState.isPixelStage) countdownReady.setGraphicSize(Std.int(countdownReady.width * daPixelZoom));
+							
+							countdownReady.screenCenter();
+							countdownReady.antialiasing = antialias;
+							
 							insert(members.indexOf(notes), countdownReady);
-							
+							FlxTween.tween(countdownReady, {/*y: countdownReady.y + 100,*/ alpha: 0}, Conductor.crotchet / 1000,
+								{
+									ease: FlxEase.cubeInOut,
+									onComplete: function(twn:FlxTween) {
+										remove(countdownReady);
+										countdownReady.destroy();
+									}
+								});
 							if (countdownSounds) FlxG.sound.play(Paths.sound('intro2' + introSoundsSuffix), 0.6);
+							setOnHScripts('countdownReady', countdownReady);
+							
 						case 2:
-							countdownSet = makeCountdownSprite(introAlts[2]);
+							countdownSet = new FlxSprite().loadGraphic(Paths.image(introAlts[1]));
+							countdownSet.scrollFactor.set();
 							
+							if (PlayState.isPixelStage) countdownSet.setGraphicSize(Std.int(countdownSet.width * daPixelZoom));
+							
+							countdownSet.screenCenter();
+							countdownSet.antialiasing = antialias;
 							insert(members.indexOf(notes), countdownSet);
-							
+							FlxTween.tween(countdownSet, {/*y: countdownSet.y + 100,*/ alpha: 0}, Conductor.crotchet / 1000,
+								{
+									ease: FlxEase.cubeInOut,
+									onComplete: function(twn:FlxTween) {
+										remove(countdownSet);
+										countdownSet.destroy();
+									}
+								});
 							if (countdownSounds) FlxG.sound.play(Paths.sound('intro1' + introSoundsSuffix), 0.6);
+							setOnHScripts('countdownSet', countdownSet);
+							
 						case 3:
-							countdownGo = makeCountdownSprite(introAlts[3]);
+							countdownGo = new FlxSprite().loadGraphic(Paths.image(introAlts[2]));
+							countdownGo.scrollFactor.set();
 							
+							if (PlayState.isPixelStage) countdownGo.setGraphicSize(Std.int(countdownGo.width * daPixelZoom));
+							
+							countdownGo.updateHitbox();
+							
+							countdownGo.screenCenter();
+							countdownGo.antialiasing = antialias;
 							insert(members.indexOf(notes), countdownGo);
-							
+							FlxTween.tween(countdownGo, {/*y: countdownGo.y + 100,*/ alpha: 0}, Conductor.crotchet / 1000,
+								{
+									ease: FlxEase.cubeInOut,
+									onComplete: function(twn:FlxTween) {
+										remove(countdownGo);
+										countdownGo.destroy();
+									}
+								});
 							if (countdownSounds) FlxG.sound.play(Paths.sound('introGo' + introSoundsSuffix), 0.6);
+							setOnHScripts('countdownGo', countdownGo);
 						case 4:
 					}
+					
+					// notes.forEachAlive(function(note:Note) {
+					// 	note.copyAlpha = false;
+					// 	note.alpha = note.multAlpha * note.playField.baseAlpha;
+					// });
 					
 					callOnScripts('onCountdownTick', [swagCounter]);
 					
 					swagCounter += 1;
 					// generateSong('fresh');
-				}, countdownLoops);
+				}, 5);
 			});
 		}
-	}
-	
-	function makeCountdownSprite(path:String)
-	{
-		var spr = new FlxSprite().loadGraphic(Paths.image(path));
-		spr.scrollFactor.set();
-		spr.updateHitbox();
-		
-		if (PlayState.isPixelStage) spr.setGraphicSize(Std.int(spr.width * daPixelZoom));
-		spr.screenCenter();
-		spr.antialiasing = isPixelStage ? false : ClientPrefs.globalAntialiasing;
-		
-		spr.cameras = [camHUD];
-		
-		FlxTween.tween(spr, {alpha: 0}, Conductor.crotchet / 1000,
-			{
-				ease: FlxEase.cubeInOut,
-				onComplete: function(twn:FlxTween) {
-					remove(spr);
-					spr.destroy();
-				}
-			});
-		return spr;
 	}
 	
 	public function addBehindGF(obj:FlxObject)
@@ -3926,7 +3954,7 @@ class PlayState extends MusicBeatState
 	{ // You didn't hit the key and let it go offscreen, also used by Hurt Notes
 		// Dupe note remove
 		
-		FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.2, 0.4));
+		//FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.2, 0.4));
 		
 		notes.forEachAlive(function(note:Note) {
 			if (daNote != note
@@ -4033,16 +4061,7 @@ class PlayState extends MusicBeatState
 			totalPlayed++;
 			RecalculateRating();
 			
-			// FlxG.sound.play(Paths.sound('missnote1'), 1, false);
-			// FlxG.log.add('played imss note');
-			
-			/*boyfriend.stunned = true;
-		
-																																						// get stunned for 1/60 of a second, makes you able to
-																																						new FlxTimer().start(1 / 60, function(tmr:FlxTimer)
-																																						{
-																																							boyfriend.stunned = false;
-					});*/
+			FlxG.sound.play(Paths.soundRandom('missnote', 1, 3), FlxG.random.float(0.1, 0.2));
 			
 			if (boyfriend.hasMissAnimations && anim)
 			{

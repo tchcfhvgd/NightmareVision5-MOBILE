@@ -17,36 +17,25 @@ import math.Vector3;
 // Weird amalgamation of Schmovin' modifier system, Andromeda modifier system and my own new shit -neb
 class ModManager
 {
-	/**
-	 * Essential mods for regular play
-	 */
-	public function registerEssentialModifiers()
-	{
-		quickRegister(new ReverseModifier(this));
-		quickRegister(new ConfusionModifier(this));
-		quickRegister(new PerspectiveModifier(this));
-		quickRegister(new OpponentModifier(this)); //ur not that essential...
-	}
-
 	public function registerDefaultModifiers()
 	{
-		final quickRegs:Array<Class<NoteModifier>> = [
-			// OpponentModifier,
-			//----------------
-			
+		var quickRegs:Array<Any> = [
 			FlipModifier,
+			ReverseModifier,
 			InvertModifier,
 			DrunkModifier,
 			BeatModifier,
 			AlphaModifier,
 			ReceptorScrollModifier,
 			ScaleModifier,
+			ConfusionModifier,
+			OpponentModifier,
 			TransformModifier,
 			InfinitePathModifier,
+			PerspectiveModifier,
 			AccelModifier,
 			XModifier
 		];
-
 		for (mod in quickRegs)
 			quickRegister(Type.createInstance(mod, [this]));
 
@@ -213,6 +202,7 @@ class ModManager
 		}
 
 		x -= 56;
+
 		return x;
 	}
 

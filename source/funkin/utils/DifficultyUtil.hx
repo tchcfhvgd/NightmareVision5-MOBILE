@@ -7,11 +7,11 @@ class DifficultyUtil
 {
 	public static final defaultDifficulties:Array<String> = ['Easy', 'Normal', 'Hard'];
 
-	public static function reset() return (difficulties = defaultDifficulties.copy());
+	public static function reset() difficulties = defaultDifficulties.copy();
 
 	public static var defaultDifficulty:String = 'Normal'; // The chart that has no suffix and starting difficulty on Freeplay/Story Mode
 
-	public static var difficulties:Array<String> = reset();
+	public static var difficulties:Array<String> = [];
 
 	public static function getDifficultyFilePath(num:Null<Int> = null)
 	{

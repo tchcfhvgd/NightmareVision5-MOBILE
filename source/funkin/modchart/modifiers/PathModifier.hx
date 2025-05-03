@@ -87,7 +87,7 @@ class PathModifier extends NoteModifier
 
 		for (dir in 0...totalDists.length)
 		{
-			// trace(dir, totalDists[dir]);
+			trace(dir, totalDists[dir]);
 		}
 	}
 
