@@ -14,15 +14,15 @@ class CheckboxThingie extends FlxSprite
 	{
 		super(x, y);
 
-		loadGraphic(Paths.image('menu/options/impastacheckbox'), true, 30, 30);
-		animation.add("unchecked", [0], 24, false);
-		animation.add("unchecking", [0], 24, false);
-		animation.add("checking", [1], 24, false);
-		animation.add("checked", [1], 24, false);
+		frames = Paths.getSparrowAtlas('checkboxanim');
+		animation.addByPrefix("unchecked", "checkbox0", 24, false);
+		animation.addByPrefix("unchecking", "checkbox anim reverse", 24, false);
+		animation.addByPrefix("checking", "checkbox anim0", 24, false);
+		animation.addByPrefix("checked", "checkbox finish", 24, false);
 
 		antialiasing = ClientPrefs.globalAntialiasing;
+		setGraphicSize(Std.int(0.9 * width));
 		updateHitbox();
-		offset.set(0, 6);
 
 		animationFinished(checked ? 'checking' : 'unchecking');
 		animation.finishCallback = animationFinished;
@@ -49,11 +49,13 @@ class CheckboxThingie extends FlxSprite
 			if (animation.curAnim.name != 'checked' && animation.curAnim.name != 'checking')
 			{
 				animation.play('checking', true);
+				offset.set(34, 25);
 			}
 		}
 		else if (animation.curAnim.name != 'unchecked' && animation.curAnim.name != 'unchecking')
 		{
 			animation.play("unchecking", true);
+			offset.set(25, 28);
 		}
 		return check;
 	}
@@ -64,9 +66,11 @@ class CheckboxThingie extends FlxSprite
 		{
 			case 'checking':
 				animation.play('checked', true);
+				offset.set(3, 12);
 
 			case 'unchecking':
 				animation.play('unchecked', true);
+				offset.set(0, 2);
 		}
 	}
 }

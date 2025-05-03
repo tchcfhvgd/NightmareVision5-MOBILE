@@ -183,10 +183,10 @@ class FreeplayState extends MusicBeatState
 
 			changeSelection();
 			changeDiff();
+			
+			addTouchPad("LEFT_FULL", "A_B_C_X_Y_Z");
 		}
 		super.create();
-
-		addTouchPad("LEFT_FULL", "A_B_C_X_Y_Z");
 		
 		callOnScript('onCreatePost', []);
 	}

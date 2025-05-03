@@ -114,12 +114,10 @@ class OptionsState extends MusicBeatState
 		changeSelection();
 		ClientPrefs.saveSettings();
 		
+		addTouchPad("UP_DOWN", "A_B_C");
 		}
 
 		super.create();
-
-		addTouchPad("UP_DOWN", "A_B_C");
-		
 		callOnScript('onCreatePost', []);
 	}
 
