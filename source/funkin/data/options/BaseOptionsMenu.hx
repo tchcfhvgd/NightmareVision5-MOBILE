@@ -134,6 +134,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		reloadCheckboxes();
 
 		addTouchPad("LEFT_FULL", "A_B_C");
+		addTouchPadCamera();
 		
 		setOnScript('bg', bg);
 		setOnScript('grpOptions', grpOptions);

@@ -494,8 +494,8 @@ class PlayState extends MusicBeatState
 		camPause.bgColor = 0x0;
 		
 		FlxG.cameras.reset(camGame);
-		FlxG.cameras.add(camOther, false);
 		FlxG.cameras.add(camHUD, false);
+		FlxG.cameras.add(camOther, false);
 		FlxG.cameras.add(camPause, false);
 		
 		setOnScripts('this', this);

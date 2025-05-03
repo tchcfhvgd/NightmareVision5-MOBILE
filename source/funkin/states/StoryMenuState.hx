@@ -197,8 +197,11 @@ class StoryMenuState extends MusicBeatState
 	override function closeSubState()
 	{
 		persistentUpdate = true;
+		if (isHardcodedState())
+		{
 		removeTouchPad();
 		addTouchPad("LEFT_FULL", "A_B_X_Y");
+		}
 		if(isHardcodedState())
 		changeWeek();
 		super.closeSubState();

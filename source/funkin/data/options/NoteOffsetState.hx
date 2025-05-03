@@ -481,6 +481,7 @@ class NoteOffsetState extends MusicBeatState
 		timeTxt.visible = !onComboMenu;
 		beatText.visible = !onComboMenu;
 
+		removeTouchPad();
 		addTouchPad(onComboMenu ? "NONE" : "LEFT_RIGHT", "A_B_C");
 		addTouchPadCamera();
 

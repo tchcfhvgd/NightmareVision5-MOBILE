@@ -125,8 +125,11 @@ class OptionsState extends MusicBeatState
 	{
 		super.closeSubState();
 		persistentUpdate = true;
+		if (isHardcodedState())
+		{
 		removeTouchPad();
 		addTouchPad("UP_DOWN", "A_B_C");
+		}
 		ClientPrefs.saveSettings();
 		
 		callOnScript('onCloseSubState', []);

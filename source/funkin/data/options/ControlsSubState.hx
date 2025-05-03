@@ -127,6 +127,7 @@ class ControlsSubState extends MusicBeatSubstate
 		changeSelection();
 
 		addTouchPad("LEFT_FULL", "A_B");
+		addTouchPadCamera();
 		
 		setOnScript('bg', bg);
 		setOnScript('grpOptions', grpOptions);

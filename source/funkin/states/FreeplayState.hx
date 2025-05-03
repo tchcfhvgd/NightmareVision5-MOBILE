@@ -195,8 +195,11 @@ class FreeplayState extends MusicBeatState
 	{
 		changeSelection(0, false);
 		persistentUpdate = true;
+		if (isHardcodedState())
+		{
 		removeTouchPad();
 		addTouchPad("LEFT_FULL", "A_B_C_X_Y_Z");
+		}
 		super.closeSubState();
 	}
 

@@ -102,6 +102,7 @@ class NotesSubState extends MusicBeatSubstate
 		changeSelection();
 
 		addTouchPad("LEFT_FULL", "A_B_C");
+		addTouchPadCamera();
 		
 		setOnScript('bg', bg);
 		callOnScript('onCreatePost', []);
