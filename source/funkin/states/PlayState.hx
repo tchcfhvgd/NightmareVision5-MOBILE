@@ -701,7 +701,7 @@ class PlayState extends MusicBeatState
 		add(grpNoteCovers);
 		add(grpNoteSplashes);
 		
-		playHUD = new funkin.huds.SusHUD(this);
+		playHUD = new funkin.huds.PsychHUD(this);
 		insert(members.indexOf(playFields), playHUD); // Data told me to do this
 		playHUD.cameras = [camHUD];
 		
