@@ -35,6 +35,11 @@
 	<!--Switch-specific-->
 	<window if="switch" orientation="landscape" fullscreen="true" width="0" height="0" resizable="true" />
 
+	<!-- Use project assets folder instead of the build one if on a debug build. -->
+	<define name="ASSET_REDIRECT" if="debug"/>
+
+	<!--<define name="RELEASE_BUILD"/>-->
+	
 	<!-- _____________________________ Path Settings ____________________________ -->
 
 	<set name="BUILD_DIR" value="export/debug" if="debug" />
@@ -49,7 +54,7 @@
 	<define name="VIDEOS_ALLOWED" if="cpp" />
 	<define name="DISCORD_ALLOWED" if="desktop"/>
 
-	<assets path='assets/embeds' 		rename='assets'			embed="true" />
+	<assets path='assets/embeds' 		rename='assets'			embed="false" />
 	<assets path="assets/fonts" />
 	<assets path="assets/shared"        exclude="*.ogg" 		if="web"/>
 	<assets path="assets/shared"        exclude="*.mp3" 		unless="web"/>

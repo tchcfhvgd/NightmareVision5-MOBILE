@@ -72,6 +72,7 @@ class Paths
 		'$CORE_DIRECTORY/shared/mobile/touchpad/bg.png'
 	];
 	
+	/// haya I love you for the base cache dump I took to the max
 	public static function clearUnusedMemory()
 	{
 		// clear non local assets in the tracked assets list
@@ -80,8 +81,17 @@ class Paths
 			// if it is not currently contained within the used local assets
 			if (!localTrackedAssets.contains(key) && !dumpExclusions.contains(key))
 			{
-				disposeGraphic(currentTrackedAssets.get(key));
-				currentTrackedAssets.remove(key);
+				// get rid of it
+				var obj = currentTrackedAssets.get(key);
+				@:privateAccess
+				if (obj != null)
+				{
+					if (obj.bitmap != null && obj.bitmap.__texture != null) obj.bitmap.__texture.dispose();
+					openfl.Assets.cache.removeBitmapData(key);
+					FlxG.bitmap._cache.remove(key);
+					obj.destroy();
+					currentTrackedAssets.remove(key);
+				}
 			}
 		}
 		// run the garbage collector for good measure lmfao
@@ -92,19 +102,26 @@ class Paths
 		hl.Gc.major();
 		#end
 	}
-	
+
 	// define the locally tracked assets
 	public static var localTrackedAssets:Array<String> = [];
-	
-	public static function clearStoredMemory()
+
+	public static function clearStoredMemory(?cleanUnused:Bool = false)
 	{
 		// clear anything not in the tracked assets list
 		@:privateAccess
 		for (key in FlxG.bitmap._cache.keys())
 		{
-			if (!currentTrackedAssets.exists(key)) disposeGraphic(FlxG.bitmap.get(key));
+			var obj = FlxG.bitmap._cache.get(key);
+			if (obj != null && !currentTrackedAssets.exists(key))
+			{
+				if (obj.bitmap != null && obj.bitmap.__texture != null) obj.bitmap.__texture.dispose();
+				openfl.Assets.cache.removeBitmapData(key);
+				FlxG.bitmap._cache.remove(key);
+				obj.destroy();
+			}
 		}
-		
+
 		// clear all sounds that are cached
 		for (key in currentTrackedSounds.keys())
 		{
@@ -118,18 +135,6 @@ class Paths
 		// flags everything to be cleared out next unused memory clear
 		localTrackedAssets = [];
 		openfl.Assets.cache.clear("songs");
-	}
-	
-	/**
-	 * Disposes of a flxgraphic
-	 * 
-	 * frees its gpu texture as well.
-	 * @param graphic 
-	 */
-	public static function disposeGraphic(graphic:FlxGraphic)
-	{
-		if (graphic != null && graphic.bitmap != null && graphic.bitmap.__texture != null) graphic.bitmap.__texture.dispose();
-		FlxG.bitmap.remove(graphic);
 	}
 	
 	static public var currentModDirectory:String = '';
