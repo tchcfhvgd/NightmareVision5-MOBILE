@@ -24,6 +24,7 @@ import funkin.api.Discord.DiscordClient;
 #end
 #if VIDEOS_ALLOWED
 import hxvlc.flixel.*;
+import funkin.objects.video.FunkinVideoSprite;
 #end
 import Init;
 import funkin.Paths;
