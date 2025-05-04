@@ -2179,17 +2179,9 @@ class PlayState extends MusicBeatState
 			FlxTimer.globalManager.forEach((i:FlxTimer) -> if (!i.finished) i.active = false);
 			FlxTween.globalManager.forEach((i:FlxTween) -> if (!i.finished) i.active = false);
 			
-			@:privateAccess
-			{
-				for (i in funkin.objects.video.FunkinVideoSprite._videos)
-				{
-					if (i != null && i.bitmap != null && i.bitmap.isPlaying)
-					{
-						i.pause();
-						i.wasPlaying = true;
-					}
-				}
-			}
+			#if VIDEOS_ALLOWED
+			forEachOfType(FunkinVideoSprite, video -> if (video != null && video.isStateAffected) video.pause(), true);
+			#end
 			
 			for (i in playFields.members)
 			{
@@ -2223,17 +2215,9 @@ class PlayState extends MusicBeatState
 			FlxTimer.globalManager.forEach((i:FlxTimer) -> if (!i.finished) i.active = true);
 			FlxTween.globalManager.forEach((i:FlxTween) -> if (!i.finished) i.active = true);
 			
-			@:privateAccess
-			{
-				for (i in funkin.objects.video.FunkinVideoSprite._videos)
-				{
-					if (i != null && i.bitmap != null && !i.bitmap.isPlaying && i.wasPlaying)
-					{
-						i.resume();
-						i.wasPlaying = false;
-					}
-				}
-			}
+			#if VIDEOS_ALLOWED
+			forEachOfType(FunkinVideoSprite, video -> if (video != null && video.isStateAffected) video.resume(), true);
+			#end
 			
 			paused = false;
 			callOnScripts('onResume', []);
