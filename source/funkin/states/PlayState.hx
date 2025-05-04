@@ -3500,7 +3500,6 @@ class PlayState extends MusicBeatState
 						if (SONG.validScore)
 						{
 							Highscore.saveWeekScore(WeekData.getWeekFileName(), campaignScore, storyDifficulty);
-							Highscore.saveWeekRating(WeekData.getWeekFileName(), (campaignAccuracy * 100) / leWeek.songs.length, storyDifficulty);
 						}
 						trace(leWeek.songs.length);
 						
