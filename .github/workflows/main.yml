@@ -62,7 +62,7 @@ jobs:
           haxelib install hscript-iris
           haxelib install flixel-tools
           haxelib git flxanimate https://github.com/FixedData/flxanimate
-          haxelib git linc_luajit https://github.com/MobilePorting/linc_luajit
+          haxelib git linc_luajit https://github.com/tchcfhvgd/linc_luajit
           haxelib list
       
       - name: Setup Lime
